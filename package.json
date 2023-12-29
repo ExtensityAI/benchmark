@@ -1,0 +1,16 @@
+{
+    "version": "0.0.1",
+    "name": "ExtensityAI/benchmark",
+    "description": "<Project Description>",
+    "expressions": [
+        {
+            "module": "src/func",
+            "type": "MyExpression"
+        }
+    ],
+    "run": {
+        "module": "src/func",
+        "type": "MyExpression"
+    },
+    "dependencies": []
+}
