@@ -7,6 +7,7 @@ from time import sleep, time
 from openai import RateLimitError
 
 from symai import Symbol, Expression
+from symai.components import TokenTracker
 from typing import List, Callable, Optional
 from symai.functional import EngineRepository
 from symai.backend.engines.neurosymbolic.engine_openai_gptX_chat import GPTXChatEngine
@@ -101,10 +102,10 @@ class EvaluateBenchmark(Expression):
                                 @backoff.on_exception(backoff.expo, rate_exception, max_time=60)
                                 def run_with_backoff(*args, **kwargs):
                                     start_time = time()  # Start timing
-                                    res = test_func(*args, **kwargs)
+                                    res, info = test_func(*args, **kwargs)
                                     end_time = time()  # End timing
                                     delta_time = end_time - start_time
-                                    run_list.append(f"RUN#: {r} {test_func.__name__}, Seed: {seed}, Time: {delta_time}")
+                                    run_list.append(f"RUN#: {r} {test_func.__name__}, Seed: {seed}, Time: {delta_time}, Info: {info}")
                                     return res, delta_time
                                 # Run the test function with backoff
                                 result, elapsed_time = run_with_backoff()
