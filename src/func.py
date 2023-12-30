@@ -86,6 +86,7 @@ class EvaluateBenchmark(Expression):
             total_time = 0.0
             if self.eval_associations:
                 print(f'Running {len(self.eval_associations)} tests for {experiment} engine...')
+                run_list = []
                 for _, test_func in tqdm(self.eval_associations):
                     for seed in seeds:
                         # Set the engine configuration
@@ -94,7 +95,7 @@ class EvaluateBenchmark(Expression):
                         EngineRepository.command('neurosymbolic', except_remedy=except_remedy)
 
                         # Run the test function
-                        for _ in range(n_runs):
+                        for r in range(n_runs):
                             try:
                                 # Use exponential backoff to handle API rate limit exceptions
                                 @backoff.on_exception(backoff.expo, rate_exception, max_time=60)
@@ -102,7 +103,9 @@ class EvaluateBenchmark(Expression):
                                     start_time = time()  # Start timing
                                     res = test_func(*args, **kwargs)
                                     end_time = time()  # End timing
-                                    return res, end_time - start_time
+                                    delta_time = end_time - start_time
+                                    run_list.append(f"RUN#: {r} {test_func.__name__}, Seed: {seed}, Time: {delta_time}")
+                                    return res, delta_time
                                 # Run the test function with backoff
                                 result, elapsed_time = run_with_backoff()
                                 total_time += elapsed_time  # Accumulate time
@@ -121,7 +124,8 @@ class EvaluateBenchmark(Expression):
                 'unique_tests': len(self.eval_associations),
                 'seeds': seeds,
                 'experiment': experiment,
-                'engine': str(engine.__class__)
+                'engine': str(engine.__class__),
+                'runs': run_list
             }
 
         return results
