@@ -1,5 +1,5 @@
-import inspect
 import backoff
+import inspect
 import json
 import numpy as np
 
@@ -7,13 +7,16 @@ from tqdm import tqdm
 from time import sleep, time
 from openai import RateLimitError
 
-from symai import Symbol, Expression
-from symai.components import TokenTracker
+from symai import Expression
 from typing import List, Callable, Optional
 from symai.functional import EngineRepository
 from symai.backend.engines.neurosymbolic.engine_openai_gptX_chat import GPTXChatEngine
 
 from src.evals import eval_in_context_associations
+from src.evals import eval_multimodal_bindings
+from src.evals import eval_program_synthesis
+from src.evals import eval_components
+from src.evals import eval_computation_graphs
 
 
 def load_test_functions(module, prefix='test_'):
@@ -147,20 +150,40 @@ class EvaluateBenchmark(Expression):
         if self.eval_associations:
             self.evaluate_experiment(experiments, self.eval_associations, n_runs, seeds, config, results, type='eval_associations')
 
-        # # Evaluate multimodal bindings
-        # if self.eval_multimodal_bindings:
-        #     self.evaluate_experiment(experiments, self.eval_multimodal_bindings, n_runs, seeds, config, results, type='eval_multimodal_bindings')
+        # Evaluate multimodal bindings
+        if self.eval_multimodal_bindings:
+            self.evaluate_experiment(experiments, self.eval_multimodal_bindings, n_runs, seeds, config, results, type='eval_multimodal_bindings')
+
+        # Evaluate program synthesis
+        if self.eval_program_synthesis:
+            self.evaluate_experiment(experiments, self.eval_program_synthesis, n_runs, seeds, config, results, type='eval_program_synthesis')
+
+        # Evaluate components
+        if self.eval_components:
+            self.evaluate_experiment(experiments, self.eval_components, n_runs, seeds, config, results, type='eval_components')
+
+        # Evaluate computation graphs
+        if self.eval_computation_graphs:
+            self.evaluate_experiment(experiments, self.eval_computation_graphs, n_runs, seeds, config, results, type='eval_computation_graphs')
 
         return results
 
 
-def run():
+def run(args):
     # Create list of test functions
-    in_context_associations_tests = load_test_functions(eval_in_context_associations)
+    in_context_associations_tests = load_test_functions(eval_in_context_associations) if args.context_associations or args.all else None
+    multimodal_bindings_tests     = load_test_functions(eval_multimodal_bindings) if args.multimodal_bindings or args.all else None
+    program_synthesis_tests       = load_test_functions(eval_program_synthesis) if args.program_synthesis or args.all else None
+    components_tests              = load_test_functions(eval_components) if args.components or args.all else None
+    computation_graphs_tests      = load_test_functions(eval_computation_graphs) if args.computation_graphs or args.all else None
 
     # Instantiate benchmarker
     benchmarker = EvaluateBenchmark(
         eval_in_context_associations=in_context_associations_tests,
+        eval_multimodal_bindings=multimodal_bindings_tests,
+        eval_program_synthesis=program_synthesis_tests,
+        eval_components=components_tests,
+        eval_computation_graphs=computation_graphs_tests
     )
 
     # Run benchmark
@@ -170,7 +193,3 @@ def run():
 
     # Print benchmark results
     print("In-context associations results:", benchmark_results)
-
-
-if __name__ == '__main__':
-    run()
