@@ -1,5 +1,6 @@
 import inspect
 import backoff
+import json
 
 from time import sleep, time
 from openai import RateLimitError
@@ -44,7 +45,7 @@ class EvaluateBenchmark(Expression):
         self.eval_components = eval_components
         self.eval_computation_graphs = eval_computation_graphs
 
-    def forward(self, experiments=['gpt4', 'gemini', 'lama'], n_runs=3, seeds=[42, 77, 97]):
+    def forward(self, experiments=['gpt4', 'gpt3.5', 'gemini', 'lama'], n_runs=3, seeds=[42, 77, 97]):
         # This dictionary will now hold the success rate for each test type
         success_rates = {}
 
@@ -54,13 +55,18 @@ class EvaluateBenchmark(Expression):
 
         # Evaluate for each engine
         for experiment in experiments:
+            # Load json config file
+            with open('config.json', 'r') as f:
+                config = json.load(f)
+
             # Set the engine error rate exception if necessary
             rate_exception = None
             engine         = None
-            if experiment == 'gpt4':
+            if experiment == 'gpt4' or experiment == 'gpt3.5':
                 rate_exception = RateLimitError
                 # initialize the engine
-                engine = GPTXChatEngine()
+                engine = GPTXChatEngine(api_key=config[experiment]['api_key'],
+                                        model=config[experiment]['model'])
                 EngineRepository.register('neurosymbolic', engine, allow_engine_override=True)
             elif experiment == 'gemini':
                 pass # TODO: Add Gemini engine
