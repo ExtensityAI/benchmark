@@ -34,6 +34,11 @@ def load_test_functions(module, prefix='test_'):
     return test_functions
 
 
+# Define a function that raises an exception without any remedy
+def except_remedy(error, *args, **kwargs):
+    raise error # raise the error without any remedy
+
+
 class EvaluateBenchmark(Expression):
     def __init__(self, eval_in_context_associations: Optional[List[Callable]] = None,
                        eval_multimodal_bindings: Optional[List[Callable]] = None,
@@ -47,56 +52,64 @@ class EvaluateBenchmark(Expression):
         self.eval_components = eval_components
         self.eval_computation_graphs = eval_computation_graphs
 
-    def forward(self, experiments=['gpt4', 'gpt3.5', 'gemini', 'lama'], n_runs=3, seeds=[42, 77, 97]):
+    def prepare(self, experiment, seed, config, results):
+        # Set the engine error rate exception if necessary
+        rate_exception = None
+        engine         = None
+        if experiment == 'gpt4' or experiment == 'gpt3.5':
+            rate_exception = RateLimitError
+            # initialize the engine
+            engine = GPTXChatEngine(api_key=config[experiment]['api_key'],
+                                    model=config[experiment]['model'])
+            EngineRepository.register('neurosymbolic', engine, allow_engine_override=True)
+            # Set the engine configuration
+            if not results[experiment]['eval_associations']['engine']:
+                results[experiment]['eval_associations']['engine'] = str(engine.__class__)
+        elif experiment == 'gemini':
+            pass # TODO: Add Gemini engine
+        elif experiment == 'lama':
+            pass # TODO: Add LAMA engine
+
+        assert engine is not None, f'Engine {experiment} not found!'
+        # Check if engine is available and send request to avoid cold start of engine
+        # Set the engine configuration
+        # TODO: Add more configuration options
+        EngineRepository.command('neurosymbolic', seed=seed)
+        EngineRepository.command('neurosymbolic', except_remedy=except_remedy)
+
+        return engine, rate_exception
+
+    def forward(self, experiments=['gpt4', 'gemini', 'lama', 'gpt3.5'], n_runs=3, seeds=[42, 77, 97]):
         # This dictionary will now hold the success rate for each test type
         results = {}
-
-        # Define a function that raises an exception without any remedy
-        def except_remedy(error, *args, **kwargs):
-            raise error # raise the error without any remedy
-
-        # Evaluate for each engine
         for experiment in experiments:
             results[experiment] = {}
 
-            # Load json config file
-            with open('config.json', 'r') as f:
-                config = json.load(f)
+        # Load json config file
+        with open('config.json', 'r') as f:
+            config = json.load(f)
 
-            # Set the engine error rate exception if necessary
-            rate_exception = None
-            engine         = None
-            if experiment == 'gpt4' or experiment == 'gpt3.5':
-                rate_exception = RateLimitError
-                # initialize the engine
-                engine = GPTXChatEngine(api_key=config[experiment]['api_key'],
-                                        model=config[experiment]['model'])
-                EngineRepository.register('neurosymbolic', engine, allow_engine_override=True)
-            elif experiment == 'gemini':
-                pass # TODO: Add Gemini engine
-            elif experiment == 'lama':
-                pass # TODO: Add LAMA engine
+        # Evaluate in-context learning associations
+        if self.eval_associations:
+            for experiment in experiments:
+                results[experiment]['eval_associations'] = {}
+                results[experiment]['eval_associations']['successes'] = 0
+                results[experiment]['eval_associations']['total_runs'] = n_runs * len(self.eval_associations) * len(seeds)
+                results[experiment]['eval_associations']['total_time'] = 0.0
+                results[experiment]['eval_associations']['run_list'] = []
+                results[experiment]['eval_associations']['engine'] = None
 
-            assert engine is not None, f'Engine {experiment} not found!'
-            # Check if engine is available and send request to avoid cold start of engine
-            Symbol(1) == 1 # ping the engine
-
-            # Evaluate in-context learning associations
-            successes  = 0
-            total_runs = n_runs * len(self.eval_associations) * len(seeds)
-            total_time = 0.0
-            if self.eval_associations:
-                print(f'Running {len(self.eval_associations)} tests for {experiment} engine...')
-                run_list = []
-                for _, test_func in tqdm(self.eval_associations):
-                    for seed in seeds:
-                        # Set the engine configuration
-                        # TODO: Add more configuration options
-                        EngineRepository.command('neurosymbolic', seed=seed)
-                        EngineRepository.command('neurosymbolic', except_remedy=except_remedy)
-
-                        # Run the test function
-                        for r in range(n_runs):
+            print(f'Running {len(self.eval_associations)} tests for {n_runs} runs, each with {len(seeds)} seeds per experiment.')
+            # We alter between the test functions and the seeds per experiment since this creates a natural API cooldown between runs
+            for _, test_func in tqdm(self.eval_associations):
+                for seed in seeds:
+                    # Run the test function
+                    for r in range(n_runs):
+                        # Evaluate for each engine
+                        for experiment in experiments:
+                            # Prepare the engine
+                            engine, rate_exception = self.prepare(experiment, seed, config, results)
+                            # Run the test function
                             try:
                                 # Use exponential backoff to handle API rate limit exceptions
                                 @backoff.on_exception(backoff.expo, rate_exception, max_time=60)
@@ -105,29 +118,28 @@ class EvaluateBenchmark(Expression):
                                     res, info = test_func(*args, **kwargs)
                                     end_time = time()  # End timing
                                     delta_time = end_time - start_time
-                                    run_list.append(f"RUN#: {r} {test_func.__name__}, Seed: {seed}, Time: {delta_time}, Info: {info}")
+                                    results[experiment]['eval_associations']['run_list'].append(f"RUN#: {r} {test_func.__name__}, Seed: {seed}, Time: {delta_time}, Info: {info}")
                                     return res, delta_time
                                 # Run the test function with backoff
                                 result, elapsed_time = run_with_backoff()
-                                total_time += elapsed_time  # Accumulate time
+                                results[experiment]['eval_associations']['total_time'] += elapsed_time  # Accumulate time
                                 # Check if the test function passed
                                 if result:
-                                    successes += 1  # Count successful outcomes
+                                    results[experiment]['eval_associations']['successes'] += 1  # Count successful outcomes
                             except Exception as e:
                                 print('ERROR:', e) # Ignore exceptions and count as a failure
                             finally:
-                                sleep(0.1) # Sleep for 100ms for API cooldown
+                                sleep(0.05) # Sleep for 50ms for min. API cooldown
+
             # Calculate the average success rate for associations
-            results[experiment]['eval_associations'] = {
-                'success_rate': successes / total_runs,
-                'average_time': total_time / total_runs,
-                'total_runs': total_runs,
-                'unique_tests': len(self.eval_associations),
-                'seeds': seeds,
-                'experiment': experiment,
-                'engine': str(engine.__class__),
-                'runs': run_list
-            }
+            for experiment in experiments:
+                results[experiment]['eval_associations'] = {
+                    'success_rate': results[experiment]['eval_associations']['successes'] / results[experiment]['eval_associations']['total_runs'],
+                    'average_time': results[experiment]['eval_associations']['total_time'] / results[experiment]['eval_associations']['total_runs'],
+                    'unique_tests': len(self.eval_associations),
+                    'seeds': seeds,
+                    'runs': results[experiment]['eval_associations']['run_list']
+                }
 
         return results
 
