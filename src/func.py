@@ -4,7 +4,7 @@ import backoff
 from time import sleep, time
 from openai import RateLimitError
 
-from symai import Expression
+from symai import Symbol, Expression
 from typing import List, Callable, Optional
 from symai.functional import EngineRepository
 from symai.backend.engines.neurosymbolic.engine_openai_gptX_chat import GPTXChatEngine
@@ -68,6 +68,8 @@ class EvaluateBenchmark(Expression):
                 pass # TODO: Add LAMA engine
 
             assert engine is not None, f'Engine {experiment} not found!'
+            # Check if engine is available and send request to avoid cold start of engine
+            Symbol(1) == 1 # ping the engine
 
             # Evaluate in-context learning associations
             successes  = 0
