@@ -1,6 +1,7 @@
 import inspect
 import backoff
 import json
+import numpy as np
 
 from tqdm import tqdm
 from time import sleep, time
@@ -52,7 +53,7 @@ class EvaluateBenchmark(Expression):
         self.eval_components = eval_components
         self.eval_computation_graphs = eval_computation_graphs
 
-    def prepare(self, experiment, seed, config, results):
+    def prepare(self, experiment, seed, config, results, type):
         # Set the engine error rate exception if necessary
         rate_exception = None
         engine         = None
@@ -63,8 +64,8 @@ class EvaluateBenchmark(Expression):
                                     model=config[experiment]['model'])
             EngineRepository.register('neurosymbolic', engine, allow_engine_override=True)
             # Set the engine configuration
-            if not results[experiment]['eval_associations']['engine']:
-                results[experiment]['eval_associations']['engine'] = str(engine.__class__)
+            if not results[experiment][type]['engine']:
+                results[experiment][type]['engine'] = str(engine.__class__)
         elif experiment == 'gemini':
             pass # TODO: Add Gemini engine
         elif experiment == 'lama':
@@ -79,8 +80,61 @@ class EvaluateBenchmark(Expression):
 
         return engine, rate_exception
 
+    def evaluate_experiment(self, experiments, evals, n_runs, seeds, config, results, type='eval_associations'):
+        for experiment in experiments:
+            results[experiment][type] = {}
+            results[experiment][type]['scores'] = []
+            results[experiment][type]['total_runs'] = n_runs * len(evals) * len(seeds)
+            results[experiment][type]['total_time'] = []
+            results[experiment][type]['run_list'] = []
+            results[experiment][type]['engine'] = None
+
+        print(f'Running {len(evals)} tests for {n_runs} runs, each with {len(seeds)} seeds per experiment.')
+        # We alter between the test functions and the seeds per experiment since this creates a natural API cooldown between runs
+        for _, test_func in tqdm(evals):
+            for seed in seeds:
+                # Run the test function
+                for r in range(n_runs):
+                    # Evaluate for each engine
+                    for experiment in experiments:
+                        # Prepare the engine
+                        engine, rate_exception = self.prepare(experiment, seed, config, results, type)
+                        # Run the test function
+
+                        # Use exponential backoff to handle API rate limit exceptions
+                        @backoff.on_exception(backoff.expo, rate_exception, max_time=60)
+                        def run_with_backoff(*args, **kwargs):
+                            start_time = time()  # Start timing
+                            try:
+                                res, info = test_func(*args, **kwargs)
+                            except Exception as e:
+                                print('ERROR:', e) # Ignore exceptions and count as a failure
+                                return False, 0.0, 0.0
+                            finally:
+                                sleep(0.05) # Sleep for 50ms for min. API cooldown
+                            end_time = time()  # End timing
+                            elapsed_time = end_time - start_time
+                            results[experiment][type]['run_list'].append(f"RUN#: {r} {test_func.__name__}, Seed: {seed}, Time: {elapsed_time}, Info: {info}")
+                            return res, elapsed_time, info['score']
+                        # Run the test function with backoff
+                        result, elapsed_time, score = run_with_backoff()
+                        results[experiment][type]['total_time'].append(elapsed_time)  # Accumulate time
+                        # Check if the test function passed
+                        if result:
+                            results[experiment][type]['scores'].append(score)  # Count scoring
+
+        # Calculate the average scoring for associations
+        for experiment in experiments:
+            results[experiment][type] = {
+                'performance': np.sum(results[experiment][type]['scores']) / results[experiment][type]['total_runs'],
+                'average_time': np.mean(results[experiment][type]['total_time']),
+                'unique_tests': len(evals),
+                'seeds': seeds,
+                'runs': results[experiment][type]['run_list']
+            }
+
     def forward(self, experiments=['gpt4', 'gemini', 'lama', 'gpt3.5'], n_runs=3, seeds=[42, 77, 97]):
-        # This dictionary will now hold the success rate for each test type
+        # This dictionary will now hold the scoring for each test type
         results = {}
         for experiment in experiments:
             results[experiment] = {}
@@ -91,55 +145,11 @@ class EvaluateBenchmark(Expression):
 
         # Evaluate in-context learning associations
         if self.eval_associations:
-            for experiment in experiments:
-                results[experiment]['eval_associations'] = {}
-                results[experiment]['eval_associations']['successes'] = 0
-                results[experiment]['eval_associations']['total_runs'] = n_runs * len(self.eval_associations) * len(seeds)
-                results[experiment]['eval_associations']['total_time'] = 0.0
-                results[experiment]['eval_associations']['run_list'] = []
-                results[experiment]['eval_associations']['engine'] = None
+            self.evaluate_experiment(experiments, self.eval_associations, n_runs, seeds, config, results, type='eval_associations')
 
-            print(f'Running {len(self.eval_associations)} tests for {n_runs} runs, each with {len(seeds)} seeds per experiment.')
-            # We alter between the test functions and the seeds per experiment since this creates a natural API cooldown between runs
-            for _, test_func in tqdm(self.eval_associations):
-                for seed in seeds:
-                    # Run the test function
-                    for r in range(n_runs):
-                        # Evaluate for each engine
-                        for experiment in experiments:
-                            # Prepare the engine
-                            engine, rate_exception = self.prepare(experiment, seed, config, results)
-                            # Run the test function
-                            try:
-                                # Use exponential backoff to handle API rate limit exceptions
-                                @backoff.on_exception(backoff.expo, rate_exception, max_time=60)
-                                def run_with_backoff(*args, **kwargs):
-                                    start_time = time()  # Start timing
-                                    res, info = test_func(*args, **kwargs)
-                                    end_time = time()  # End timing
-                                    delta_time = end_time - start_time
-                                    results[experiment]['eval_associations']['run_list'].append(f"RUN#: {r} {test_func.__name__}, Seed: {seed}, Time: {delta_time}, Info: {info}")
-                                    return res, delta_time
-                                # Run the test function with backoff
-                                result, elapsed_time = run_with_backoff()
-                                results[experiment]['eval_associations']['total_time'] += elapsed_time  # Accumulate time
-                                # Check if the test function passed
-                                if result:
-                                    results[experiment]['eval_associations']['successes'] += 1  # Count successful outcomes
-                            except Exception as e:
-                                print('ERROR:', e) # Ignore exceptions and count as a failure
-                            finally:
-                                sleep(0.05) # Sleep for 50ms for min. API cooldown
-
-            # Calculate the average success rate for associations
-            for experiment in experiments:
-                results[experiment]['eval_associations'] = {
-                    'success_rate': results[experiment]['eval_associations']['successes'] / results[experiment]['eval_associations']['total_runs'],
-                    'average_time': results[experiment]['eval_associations']['total_time'] / results[experiment]['eval_associations']['total_runs'],
-                    'unique_tests': len(self.eval_associations),
-                    'seeds': seeds,
-                    'runs': results[experiment]['eval_associations']['run_list']
-                }
+        # # Evaluate multimodal bindings
+        # if self.eval_multimodal_bindings:
+        #     self.evaluate_experiment(experiments, self.eval_multimodal_bindings, n_runs, seeds, config, results, type='eval_multimodal_bindings')
 
         return results
 
