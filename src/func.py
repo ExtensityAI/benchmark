@@ -2,6 +2,7 @@ import inspect
 import backoff
 import json
 
+from tqdm import tqdm
 from time import sleep, time
 from openai import RateLimitError
 
@@ -47,7 +48,7 @@ class EvaluateBenchmark(Expression):
 
     def forward(self, experiments=['gpt4', 'gpt3.5', 'gemini', 'lama'], n_runs=3, seeds=[42, 77, 97]):
         # This dictionary will now hold the success rate for each test type
-        success_rates = {}
+        results = {}
 
         # Define a function that raises an exception without any remedy
         def except_remedy(error, *args, **kwargs):
@@ -55,6 +56,8 @@ class EvaluateBenchmark(Expression):
 
         # Evaluate for each engine
         for experiment in experiments:
+            results[experiment] = {}
+
             # Load json config file
             with open('config.json', 'r') as f:
                 config = json.load(f)
@@ -82,7 +85,8 @@ class EvaluateBenchmark(Expression):
             total_runs = n_runs * len(self.eval_associations) * len(seeds)
             total_time = 0.0
             if self.eval_associations:
-                for _, test_func in self.eval_associations:
+                print(f'Running {len(self.eval_associations)} tests for {experiment} engine...')
+                for _, test_func in tqdm(self.eval_associations):
                     for seed in seeds:
                         # Set the engine configuration
                         # TODO: Add more configuration options
@@ -110,7 +114,7 @@ class EvaluateBenchmark(Expression):
                             finally:
                                 sleep(0.1) # Sleep for 100ms for API cooldown
             # Calculate the average success rate for associations
-            success_rates['eval_associations'] = {
+            results[experiment]['eval_associations'] = {
                 'success_rate': successes / total_runs,
                 'average_time': total_time / total_runs,
                 'total_runs': total_runs,
@@ -120,7 +124,7 @@ class EvaluateBenchmark(Expression):
                 'engine': str(engine.__class__)
             }
 
-        return success_rates
+        return results
 
 
 def run():
@@ -133,12 +137,12 @@ def run():
     )
 
     # Run benchmark
-    benchmark_results = benchmarker(experiments=['gpt4'],
+    benchmark_results = benchmarker(experiments=['gpt4', 'gpt3.5'],
                                     n_runs=1,
                                     seeds=[42])
 
     # Print benchmark results
-    print("In-context associations average success rate:", benchmark_results['eval_associations'])
+    print("In-context associations results:", benchmark_results)
 
 
 if __name__ == '__main__':
