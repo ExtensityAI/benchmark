@@ -1,16 +1,16 @@
 {
     "version": "0.0.1",
     "name": "ExtensityAI/benchmark",
-    "description": "<Project Description>",
+    "description": "Evaluation of the neuro-symbolic framework.",
     "expressions": [
         {
             "module": "src/func",
-            "type": "MyExpression"
+            "type": "EvaluateBenchmark"
         }
     ],
     "run": {
         "module": "src/func",
-        "type": "MyExpression"
+        "type": "EvaluateBenchmark"
     },
     "dependencies": []
 }

@@ -1,2 +1,2 @@
-# benchmark
-Evaluation of neuro-symbolic engines
+# Benchmark
+Evaluation of the neuro-symbolic framework.
