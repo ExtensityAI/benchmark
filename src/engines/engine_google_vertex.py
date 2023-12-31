@@ -1,7 +1,6 @@
 import logging
 import google.generativeai as genai
 
-from vertexai.preview.generative_models import GenerativeModel
 from typing import List, Optional
 
 from symai.backend.base import Engine
@@ -137,7 +136,5 @@ class GoogleGeminiEngine(Engine):
         if argument.prop.template_suffix:
             user += f"\n[[PLACEHOLDER]]\n{str(argument.prop.template_suffix)}\n\n"
             user += f"Only generate content for the placeholder `[[PLACEHOLDER]]` following the instructions and context information. Do NOT write `[[PLACEHOLDER]]` or anything else in your output.\n\n"
-
-        user_prompt = { "role": "user", "parts": {"text": user} }
 
         argument.prop.prepared_input = system + '\n' + user
