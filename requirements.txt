@@ -1,5 +1,4 @@
 backoff
 seaborn
-google-generativeai
 google-cloud-aiplatform
-expressvpn-python
+google-generativeai
