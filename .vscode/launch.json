@@ -22,6 +22,17 @@
             "args": [
                 "--context_associations"
             ]
+        },
+        {
+            "name": "Run Dummy",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/test.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "--dummy"
+            ]
         }
     ]
 }

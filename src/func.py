@@ -19,6 +19,47 @@ from src.evals import eval_components
 from src.evals import eval_computation_graphs
 
 
+NAME_MAPPING = {
+    'eval_in_context_associations': 'Associations',
+    'eval_multimodal_bindings': 'Modal',
+    'eval_program_synthesis': 'Code',
+    'eval_components': 'Components',
+    'eval_computation_graphs': 'Graphs'
+}
+
+
+DUMMY_DATA = {
+    "GPT3.5": {
+        f"{NAME_MAPPING['eval_in_context_associations']}": {"performance": 0.8},
+        f"{NAME_MAPPING['eval_multimodal_bindings']}": {"performance": 0.6},
+        f"{NAME_MAPPING['eval_program_synthesis']}": {"performance": 0.7},
+        f"{NAME_MAPPING['eval_components']}": {"performance": 0.5},
+        f"{NAME_MAPPING['eval_computation_graphs']}": {"performance": 0.9}
+    },
+    "GPT4": {
+        f"{NAME_MAPPING['eval_in_context_associations']}": {"performance": 0.95},
+        f"{NAME_MAPPING['eval_multimodal_bindings']}": {"performance": 0.85},
+        f"{NAME_MAPPING['eval_program_synthesis']}": {"performance": 0.8},
+        f"{NAME_MAPPING['eval_components']}": {"performance": 0.75},
+        f"{NAME_MAPPING['eval_computation_graphs']}": {"performance": 0.9}
+    },
+    "Gemini": {
+        f"{NAME_MAPPING['eval_in_context_associations']}": {"performance": 0.6},
+        f"{NAME_MAPPING['eval_multimodal_bindings']}": {"performance": 0.5},
+        f"{NAME_MAPPING['eval_program_synthesis']}": {"performance": 0.55},
+        f"{NAME_MAPPING['eval_components']}": {"performance": 0.65},
+        f"{NAME_MAPPING['eval_computation_graphs']}": {"performance": 0.7}
+    },
+    "Llama": {
+        f"{NAME_MAPPING['eval_in_context_associations']}": {"performance": 0.7},
+        f"{NAME_MAPPING['eval_multimodal_bindings']}": {"performance": 0.65},
+        f"{NAME_MAPPING['eval_program_synthesis']}": {"performance": 0.6},
+        f"{NAME_MAPPING['eval_components']}": {"performance": 0.7},
+        f"{NAME_MAPPING['eval_computation_graphs']}": {"performance": 0.75}
+    }
+}
+
+
 def load_test_functions(module, prefix='test_'):
     """
     Load all test functions from a given module that start with a specific prefix.
@@ -50,7 +91,7 @@ class EvaluateBenchmark(Expression):
                        eval_components: Optional[List[Callable]] = None,
                        eval_computation_graphs: Optional[List[Callable]] = None):
         super().__init__()
-        self.eval_associations = eval_in_context_associations
+        self.eval_in_context_associations = eval_in_context_associations
         self.eval_multimodal_bindings = eval_multimodal_bindings
         self.eval_program_synthesis = eval_program_synthesis
         self.eval_components = eval_components
@@ -84,6 +125,8 @@ class EvaluateBenchmark(Expression):
         return engine, rate_exception
 
     def evaluate_experiment(self, experiments, evals, n_runs, seeds, config, results, type='eval_associations'):
+        type = NAME_MAPPING[type]
+
         for experiment in experiments:
             results[experiment][type] = {}
             results[experiment][type]['scores'] = []
@@ -136,7 +179,7 @@ class EvaluateBenchmark(Expression):
                 'runs': results[experiment][type]['run_list']
             }
 
-    def forward(self, experiments=['gpt4', 'gemini', 'lama', 'gpt3.5'], n_runs=3, seeds=[42, 77, 97]):
+    def forward(self, experiments=['gpt4', 'gemini', 'lama', 'gpt3.5'], n_runs=3, seeds=[42, 77, 97], dummy=False):
         # This dictionary will now hold the scoring for each test type
         results = {}
         for experiment in experiments:
@@ -146,9 +189,13 @@ class EvaluateBenchmark(Expression):
         with open('config.json', 'r') as f:
             config = json.load(f)
 
+        # If dummy is True, return dummy data
+        if dummy:
+            return DUMMY_DATA
+
         # Evaluate in-context learning associations
-        if self.eval_associations:
-            self.evaluate_experiment(experiments, self.eval_associations, n_runs, seeds, config, results, type='eval_associations')
+        if self.eval_in_context_associations:
+            self.evaluate_experiment(experiments, self.eval_in_context_associations, n_runs, seeds, config, results, type='eval_associations')
 
         # Evaluate multimodal bindings
         if self.eval_multimodal_bindings:
@@ -189,7 +236,10 @@ def run(args):
     # Run benchmark
     benchmark_results = benchmarker(experiments=['gpt4', 'gpt3.5'],
                                     n_runs=1,
-                                    seeds=[42])
+                                    seeds=[42],
+                                    dummy=args.dummy)
 
     # Print benchmark results
     print("In-context associations results:", benchmark_results)
+
+    return benchmark_results
