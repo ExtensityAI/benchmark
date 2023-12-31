@@ -12,6 +12,7 @@ from typing import List, Callable, Optional
 from symai.functional import EngineRepository
 from symai.backend.engines.neurosymbolic.engine_openai_gptX_chat import GPTXChatEngine
 
+from src.engines.engine_google_vertex import GoogleGeminiEngine
 from src.evals import eval_in_context_associations
 from src.evals import eval_multimodal_bindings
 from src.evals import eval_program_synthesis
@@ -111,9 +112,12 @@ class EvaluateBenchmark(Expression):
             if not results[experiment][type]['engine']:
                 results[experiment][type]['engine'] = str(engine.__class__)
         elif experiment == 'gemini':
-            pass # TODO: Add Gemini engine
-        elif experiment == 'lama':
-            pass # TODO: Add LAMA engine
+            # initialize the engine
+            engine = GoogleGeminiEngine(api_key=config[experiment]['api_key'],
+                                        model=config[experiment]['model'])
+            EngineRepository.register('neurosymbolic', engine, allow_engine_override=True)
+        elif experiment == 'llama':
+            pass # TODO: Add LLAMA engine
 
         assert engine is not None, f'Engine {experiment} not found!'
         # Check if engine is available and send request to avoid cold start of engine
@@ -124,7 +128,7 @@ class EvaluateBenchmark(Expression):
 
         return engine, rate_exception
 
-    def evaluate_experiment(self, experiments, evals, n_runs, seeds, config, results, type='eval_associations'):
+    def evaluate_experiment(self, experiments, evals, n_runs, seeds, config, results, type='eval_in_context_associations'):
         type = NAME_MAPPING[type]
 
         for experiment in experiments:
@@ -179,7 +183,7 @@ class EvaluateBenchmark(Expression):
                 'runs': results[experiment][type]['run_list']
             }
 
-    def forward(self, experiments=['gpt4', 'gemini', 'lama', 'gpt3.5'], n_runs=3, seeds=[42, 77, 97], dummy=False):
+    def forward(self, experiments=['gpt4', 'llama', 'gpt3.5', 'gemini'], n_runs=3, seeds=[42, 77, 97], dummy=False):
         # This dictionary will now hold the scoring for each test type
         results = {}
         for experiment in experiments:
@@ -195,7 +199,7 @@ class EvaluateBenchmark(Expression):
 
         # Evaluate in-context learning associations
         if self.eval_in_context_associations:
-            self.evaluate_experiment(experiments, self.eval_in_context_associations, n_runs, seeds, config, results, type='eval_associations')
+            self.evaluate_experiment(experiments, self.eval_in_context_associations, n_runs, seeds, config, results, type='eval_in_context_associations')
 
         # Evaluate multimodal bindings
         if self.eval_multimodal_bindings:
@@ -234,7 +238,7 @@ def run(args):
     )
 
     # Run benchmark
-    benchmark_results = benchmarker(experiments=['gpt4', 'gpt3.5'],
+    benchmark_results = benchmarker(experiments=['gemini'],
                                     n_runs=1,
                                     seeds=[42],
                                     dummy=args.dummy)
