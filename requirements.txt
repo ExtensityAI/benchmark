@@ -2,3 +2,4 @@ backoff
 seaborn
 google-cloud-aiplatform
 google-generativeai
+anthropic

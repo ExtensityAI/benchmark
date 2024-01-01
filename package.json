@@ -12,5 +12,7 @@
         "module": "src/func",
         "type": "EvaluateBenchmark"
     },
-    "dependencies": []
+    "dependencies": [
+        "ExtensityAI/llamacpp"
+    ]
 }

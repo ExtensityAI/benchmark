@@ -1,10 +1,22 @@
 {
     "gpt4": {
-        "api_key": "",
+        "api_key": "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",
         "model": "gpt-4-1106-preview"
     },
     "gpt3.5": {
-        "api_key": "",
+        "api_key": "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",
         "model": "gpt-3.5-turbo"
+    },
+    "gemini": {
+        "api_key": "AIzaSyAcKBcfOC3xSR8-MaFQfgemfG-PxP7Kliw",
+        "model": "gemini-pro"
+    },
+    "llama": {
+        "host": "http://localhost",
+        "port": 8080
+    },
+    "zephyr": {
+        "host": "http://localhost",
+        "port": 8081
     }
 }

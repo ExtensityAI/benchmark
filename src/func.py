@@ -12,6 +12,7 @@ from typing import List, Callable, Optional
 from symai.functional import EngineRepository
 from symai.backend.engines.neurosymbolic.engine_openai_gptX_chat import GPTXChatEngine
 
+from src.engines.engine_llamacpp import LLaMACppClientEngine
 from src.engines.engine_google_vertex import GoogleGeminiEngine
 from src.evals import eval_in_context_associations
 from src.evals import eval_multimodal_bindings
@@ -108,18 +109,27 @@ class EvaluateBenchmark(Expression):
             engine = GPTXChatEngine(api_key=config[experiment]['api_key'],
                                     model=config[experiment]['model'])
             EngineRepository.register('neurosymbolic', engine, allow_engine_override=True)
-            # Set the engine configuration
-            if not results[experiment][type]['engine']:
-                results[experiment][type]['engine'] = str(engine.__class__)
         elif experiment == 'gemini':
             # initialize the engine
             engine = GoogleGeminiEngine(api_key=config[experiment]['api_key'],
                                         model=config[experiment]['model'])
             EngineRepository.register('neurosymbolic', engine, allow_engine_override=True)
         elif experiment == 'llama':
-            pass # TODO: Add LLAMA engine
+            # initialize the engine
+            engine = LLaMACppClientEngine(host=config[experiment]['host'],
+                                          port=config[experiment]['port'])
+            EngineRepository.register('neurosymbolic', engine, allow_engine_override=True)
+        elif experiment == 'zephyr':
+            # initialize the engine
+            engine = LLaMACppClientEngine(host=config[experiment]['host'],
+                                          port=config[experiment]['port'])
+            EngineRepository.register('neurosymbolic', engine, allow_engine_override=True)
 
         assert engine is not None, f'Engine {experiment} not found!'
+        # Set the engine configuration
+        if not results[experiment][type]['engine']:
+            results[experiment][type]['engine'] = str(engine.__class__)
+
         # Check if engine is available and send request to avoid cold start of engine
         # Set the engine configuration
         # TODO: Add more configuration options
@@ -238,7 +248,7 @@ def run(args):
     )
 
     # Run benchmark
-    benchmark_results = benchmarker(experiments=['gemini'],
+    benchmark_results = benchmarker(experiments=['zephyr'],
                                     n_runs=1,
                                     seeds=[42],
                                     dummy=args.dummy)

@@ -11,10 +11,12 @@ def test_add_and_equals() -> bool:
     return str(sym) == '3', copy.deepcopy(success_score)
 
 def test_sub_and_contains() -> bool:
-    res = (Symbol('Hello my friend') - Symbol('friend')) + 'enemy'
-    return 'enemy' in str(res).lower(), copy.deepcopy(success_score)
+    res = (Symbol('Hello my friend.') - Symbol('friend')) + 'enemy'
+    res = str(res).lower().strip()
+    return 'enemy' in res and res.endswith('.'), copy.deepcopy(success_score)
 
 def test_compare() -> bool:
     res = Symbol(10) > Symbol(5)
-    return res, copy.deepcopy(success_score)
+    res = str(res)
+    return res == 'True', copy.deepcopy(success_score)
 

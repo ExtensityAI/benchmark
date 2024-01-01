@@ -4,6 +4,8 @@ import google.generativeai as genai
 from typing import List, Optional
 
 from symai.backend.base import Engine
+from symai.backend.settings import SYMAI_CONFIG
+
 
 logging.getLogger("requests").setLevel(logging.ERROR)
 logging.getLogger("urllib").setLevel(logging.ERROR)
@@ -16,6 +18,7 @@ class GoogleGeminiEngine(Engine):
         super().__init__()
         logger              = logging.getLogger('vertexai')
         logger.setLevel(logging.WARNING)
+        self.config         = SYMAI_CONFIG
         # Initialize the Vertex AI project
         self.api_key        = api_key
         genai.configure(api_key=api_key)
