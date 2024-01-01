@@ -17,8 +17,12 @@ Install LlamaCpp backend.
 sympkg i ExtensityAI/llamacpp
 ```
 
-Then follow the instructions in the [LlamaCpp]() repository.
+Then follow the instructions in the [ExtensityAI/llamacpp](https://github.com/ExtensityAI/llamacpp) repository to install and run the LlamaCpp backend with various HuggingFace models.
 
-### Install
+### Usage
+
+Run the benchmark.
 
 ```bash
+python test.py
+```
