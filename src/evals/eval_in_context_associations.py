@@ -132,9 +132,9 @@ def test_insert_lshift():
     res = sym << 'and bananas'
     res = str(res).lower().strip()
     # check if the LSHIFT operator retains the 4 essential words
-    assert 'love' in str(res), f'Failed to find love in {str(res)}'
-    assert 'apples and bananas' in str(res), f'Failed to find apples and bananas in {str(res)}'
-    assert 'eat' in str(res), f'Failed to find eat in {str(res)}'
+    assert 'love' in str(res), f'Failed to find love in {res}'
+    assert 'apples and bananas' in str(res), f'Failed to find apples and bananas in {res}'
+    assert 'eat' in str(res), f'Failed to find eat in {res}'
     return True, copy.deepcopy(success_score)
 
 
@@ -142,10 +142,11 @@ def test_insert_rshift():
     '''Test if information can be inserted into a symbol using the RSHIFT operator'''
     sym = Symbol('I love to eat apples')
     res = 'and bananas' >> sym
+    res = str(res).lower().strip()
     # check if the RSHIFT operator retains the 4 essential words
-    assert 'love' in str(res), f'Failed to find love in {str(res)}'
-    assert 'apples and bananas' in str(res), f'Failed to find apples and bananas in {str(res)}'
-    assert 'eat' in str(res), f'Failed to find eat in {str(res)}'
+    assert 'love' in res, f'Failed to find love in {res}'
+    assert 'apples and bananas' in res, f'Failed to find apples and bananas in {res}'
+    assert 'eat' in res, f'Failed to find eat in {res}'
     return True, copy.deepcopy(success_score)
 
 
@@ -155,9 +156,9 @@ def test_extract():
     res = sym.extract('fruits')
     res = str(res).lower().strip()
     # check if the EXTRACT operator retains the 3 essential words
-    assert 'bananas' in str(res), f'Failed to find bananas in {str(res)}'
-    assert 'mangos' in str(res), f'Failed to find mangos in {str(res)}'
-    assert 'oranges' in str(res), f'Failed to find oranges in {str(res)}'
+    assert 'bananas' in res, f'Failed to find bananas in {res}'
+    assert 'mangos'  in res, f'Failed to find mangos in {res}'
+    assert 'oranges' in res, f'Failed to find oranges in {res}'
     return True, copy.deepcopy(success_score)
 
 
@@ -177,13 +178,13 @@ def test_filter():
     res = sym.filter('science related subjects')
     res = str(res).lower().strip()
     # check if the FILTER operator retains the 3 essential words
-    assert 'physics' in str(res), f'Failed to find physics in {str(res)}'
-    assert 'mathematics' in str(res), f'Failed to find mathematics in {str(res)}'
-    assert 'music' in str(res), f'Failed to find music in {str(res)}'
-    assert 'art' not in str(res), f'Failed to remove art in {str(res)}'
-    assert 'theater' not in str(res), f'Failed to remove theater in {str(res)}'
-    assert 'writing' not in str(res), f'Failed to remove writing in {str(res)}'
-    assert 'sports' not in str(res), f'Failed to remove sports in {str(res)}'
+    assert 'physics' in res, f'Failed to find physics in {res}'
+    assert 'mathematics' in res, f'Failed to find mathematics in {res}'
+    assert 'music' in res, f'Failed to find music in {res}'
+    assert 'art' not in res, f'Failed to remove art in {res}'
+    assert 'theater' not in res, f'Failed to remove theater in {res}'
+    assert 'writing' not in res, f'Failed to remove writing in {res}'
+    assert 'sports' not in res, f'Failed to remove sports in {res}'
     return True, copy.deepcopy(success_score)
 
 
@@ -193,6 +194,6 @@ def test_clean():
     res = sym.clean()
     res = str(res).lower().strip()
     # check if the CLEAN operator retains the 2 essential words
-    assert 'hello world' == str(res), f'Failed to find hello world in {str(res)}'
+    assert 'hello world' == res, f'Failed to find hello world in {res}'
     return True, copy.deepcopy(success_score)
 

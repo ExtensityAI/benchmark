@@ -1,5 +1,5 @@
-import argparse
 import os
+import argparse
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -56,67 +56,10 @@ LATEX_TEMPLATE = """
 
 
 def create_latex_result(data):
-    # Define the directory and file name
-    directory = 'tmp'
-    # make sure the directory exists
-    os.makedirs(directory, exist_ok=True)
-    filename = 'benchmark_results.tex'
-    filepath = os.path.join(directory, filename)
+    latex_table = ''
+    # TODO: Write this function to create a latex table from the data
 
-    # Gather the model names
-    model_names = " & ".join(key for key in data.keys())
-
-    # Initialize the total scores
-    total_scores = {model: 0.0 for model in data.keys()}
-
-    # Prepare table content
-    benchmark_rows = {bench_name: "" for bench_name in BENCHMARK_NAME_MAPPING.values()}
-    for bench_name in BENCHMARK_NAME_MAPPING.values():
-        # Initialize list to keep the scores for this benchmark to find the best model
-        scores = [(model, values[bench_name]['performance']) for model, values in data.items()]
-        best_score = max(scores, key=lambda x: x[1])[1]
-
-        # Create row for the latex table and update the total scores
-        row = f"{bench_name}"
-        for model, score in scores:
-            # Add to the total score
-            total_scores[model] += score
-            # Format row with best model in bold
-            if score == best_score:
-                row += f" & \\textbf{{{score:.2f}}}"
-            else:
-                row += f" & {score:.2f}"
-        benchmark_rows[bench_name] = row
-
-    # Compute the average of total scores
-    for model in total_scores.keys():
-        total_scores[model] /= len(BENCHMARK_NAME_MAPPING)
-
-    # Best total performance in bold
-    best_total = max(total_scores.values())
-    total_values = " & ".join(f"\\textbf{{{v:.2f}}}" if v == best_total else f"{v:.2f}" for v in total_scores.values())
-
-    # Use the LATEX_TEMPLATE and inject the benchmark rows
-    latex_table = LATEX_TEMPLATE.format(
-        model_names=model_names,
-        benchmark_in_context_association_row=benchmark_rows[BENCHMARK_NAME_MAPPING['eval_in_context_associations']],
-        benchmark_multimodality_row=benchmark_rows[BENCHMARK_NAME_MAPPING['eval_multimodal_bindings']],
-        benchmark_program_synthesis_row=benchmark_rows[BENCHMARK_NAME_MAPPING['eval_program_synthesis']],
-        benchmark_components_row=benchmark_rows[BENCHMARK_NAME_MAPPING['eval_components']],
-        benchmark_computation_graphs_row=benchmark_rows[BENCHMARK_NAME_MAPPING['eval_computation_graphs']],
-        total_row='Total' + total_values
-    )
-
-    # Print the latex table to the console
-    print(latex_table)
-
-    # Save the latex table to a file
-    if not os.path.exists(directory):
-        os.makedirs(directory)
-    with open(filepath, 'w') as f:
-        f.write(latex_table)
-
-    print(f"LaTeX table saved to {filepath}")
+    print(f"LaTeX table saved to {latex_table}")
 
 
 def create_plot(data):

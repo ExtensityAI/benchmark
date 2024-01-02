@@ -46,6 +46,13 @@ class LLaMACppClientEngine(Engine):
             return 'neurosymbolic'
         return super().id() # default to unregistered
 
+    def command(self, *args, **kwargs):
+        super().command(*args, **kwargs)
+        if 'seed' in kwargs:
+            self.seed      = kwargs['seed']
+        if 'except_remedy' in kwargs:
+            self.except_remedy = kwargs['except_remedy']
+
     @property
     def max_tokens(self):
         return 2048

@@ -3,3 +3,4 @@ seaborn
 google-cloud-aiplatform
 google-generativeai
 anthropic
+wandb

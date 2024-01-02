@@ -46,6 +46,7 @@ class MultiModalExpression(Expression):
         self.rendering   = Interface('dall_e')
         self.captioning  = Interface('llava')
         self.transcribe  = Interface('whisper')
+        # evaluation interfaces
         self.clip        = Interface('clip')
         self.embedding   = Interface('ExtensityAI/embeddings')
         # define functions
@@ -59,6 +60,11 @@ class MultiModalExpression(Expression):
         # testing the category detection accuracy
         category     = self.choice(self.category.options.values(), default='unknown')
         category_emb = Symbol(self.embedding(category))
+        # TODO: idea for the future
+        # category_sym = Symbol(category).to_tensor(interface='ExtensityAI/embeddings')
+        # category_sym.value # the same as category
+        # category_emb.data  # vector representation of the category
+        # use this data tensor for similarity
         score2       = category_emb.similarity(refs_emb[option], metric='cosine')
         return option, (score1 + score2) / 2.0
 

@@ -21,43 +21,67 @@ from src.evals import eval_components
 from src.evals import eval_computation_graphs
 
 
-NAME_MAPPING = {
+BENCHMARK_NAME_MAPPING = {
     'eval_in_context_associations': 'Associations',
-    'eval_multimodal_bindings': 'Modal',
+    'eval_multimodal_bindings': 'Modality',
     'eval_program_synthesis': 'Code',
     'eval_components': 'Components',
     'eval_computation_graphs': 'Graphs'
 }
 
 
+MODEL_NAME_MAPPING = {
+    'gpt4': 'GPT-4',
+    'gpt3.5': 'GPT-3.5',
+    'gemini': 'Gemini',
+    'llama': 'LlaMA 2',
+    'mistral': 'Mistral',
+    'zephyr': 'Zephyr'
+}
+
+
 DUMMY_DATA = {
-    "GPT3.5": {
-        f"{NAME_MAPPING['eval_in_context_associations']}": {"performance": 0.8},
-        f"{NAME_MAPPING['eval_multimodal_bindings']}": {"performance": 0.6},
-        f"{NAME_MAPPING['eval_program_synthesis']}": {"performance": 0.7},
-        f"{NAME_MAPPING['eval_components']}": {"performance": 0.5},
-        f"{NAME_MAPPING['eval_computation_graphs']}": {"performance": 0.9}
+    f"{MODEL_NAME_MAPPING['gpt3.5']}": {
+        f"{BENCHMARK_NAME_MAPPING['eval_in_context_associations']}": {"performance": 0.8},
+        f"{BENCHMARK_NAME_MAPPING['eval_multimodal_bindings']}": {"performance": 0.6},
+        f"{BENCHMARK_NAME_MAPPING['eval_program_synthesis']}": {"performance": 0.7},
+        f"{BENCHMARK_NAME_MAPPING['eval_components']}": {"performance": 0.67},
+        f"{BENCHMARK_NAME_MAPPING['eval_computation_graphs']}": {"performance": 0.7}
     },
-    "GPT4": {
-        f"{NAME_MAPPING['eval_in_context_associations']}": {"performance": 0.95},
-        f"{NAME_MAPPING['eval_multimodal_bindings']}": {"performance": 0.85},
-        f"{NAME_MAPPING['eval_program_synthesis']}": {"performance": 0.8},
-        f"{NAME_MAPPING['eval_components']}": {"performance": 0.75},
-        f"{NAME_MAPPING['eval_computation_graphs']}": {"performance": 0.9}
+    f"{MODEL_NAME_MAPPING['gpt4']}": {
+        f"{BENCHMARK_NAME_MAPPING['eval_in_context_associations']}": {"performance": 0.95},
+        f"{BENCHMARK_NAME_MAPPING['eval_multimodal_bindings']}": {"performance": 0.85},
+        f"{BENCHMARK_NAME_MAPPING['eval_program_synthesis']}": {"performance": 0.8},
+        f"{BENCHMARK_NAME_MAPPING['eval_components']}": {"performance": 0.85},
+        f"{BENCHMARK_NAME_MAPPING['eval_computation_graphs']}": {"performance": 0.9}
     },
-    "Gemini": {
-        f"{NAME_MAPPING['eval_in_context_associations']}": {"performance": 0.6},
-        f"{NAME_MAPPING['eval_multimodal_bindings']}": {"performance": 0.5},
-        f"{NAME_MAPPING['eval_program_synthesis']}": {"performance": 0.55},
-        f"{NAME_MAPPING['eval_components']}": {"performance": 0.65},
-        f"{NAME_MAPPING['eval_computation_graphs']}": {"performance": 0.7}
+    f"{MODEL_NAME_MAPPING['gemini']}": {
+        f"{BENCHMARK_NAME_MAPPING['eval_in_context_associations']}": {"performance": 0.9},
+        f"{BENCHMARK_NAME_MAPPING['eval_multimodal_bindings']}": {"performance": 0.89},
+        f"{BENCHMARK_NAME_MAPPING['eval_program_synthesis']}": {"performance": 0.78},
+        f"{BENCHMARK_NAME_MAPPING['eval_components']}": {"performance": 0.75},
+        f"{BENCHMARK_NAME_MAPPING['eval_computation_graphs']}": {"performance": 0.7}
     },
-    "Llama": {
-        f"{NAME_MAPPING['eval_in_context_associations']}": {"performance": 0.7},
-        f"{NAME_MAPPING['eval_multimodal_bindings']}": {"performance": 0.65},
-        f"{NAME_MAPPING['eval_program_synthesis']}": {"performance": 0.6},
-        f"{NAME_MAPPING['eval_components']}": {"performance": 0.7},
-        f"{NAME_MAPPING['eval_computation_graphs']}": {"performance": 0.75}
+    f"{MODEL_NAME_MAPPING['llama']}": {
+        f"{BENCHMARK_NAME_MAPPING['eval_in_context_associations']}": {"performance": 0.6},
+        f"{BENCHMARK_NAME_MAPPING['eval_multimodal_bindings']}": {"performance": 0.45},
+        f"{BENCHMARK_NAME_MAPPING['eval_program_synthesis']}": {"performance": 0.4},
+        f"{BENCHMARK_NAME_MAPPING['eval_components']}": {"performance": 0.3},
+        f"{BENCHMARK_NAME_MAPPING['eval_computation_graphs']}": {"performance": 0.45}
+    },
+    f"{MODEL_NAME_MAPPING['mistral']}": {
+        f"{BENCHMARK_NAME_MAPPING['eval_in_context_associations']}": {"performance": 0.67},
+        f"{BENCHMARK_NAME_MAPPING['eval_multimodal_bindings']}": {"performance": 0.5},
+        f"{BENCHMARK_NAME_MAPPING['eval_program_synthesis']}": {"performance": 0.45},
+        f"{BENCHMARK_NAME_MAPPING['eval_components']}": {"performance": 0.4},
+        f"{BENCHMARK_NAME_MAPPING['eval_computation_graphs']}": {"performance": 0.3}
+    },
+    f"{MODEL_NAME_MAPPING['zephyr']}": {
+        f"{BENCHMARK_NAME_MAPPING['eval_in_context_associations']}": {"performance": 0.7},
+        f"{BENCHMARK_NAME_MAPPING['eval_multimodal_bindings']}": {"performance": 0.6},
+        f"{BENCHMARK_NAME_MAPPING['eval_program_synthesis']}": {"performance": 0.5},
+        f"{BENCHMARK_NAME_MAPPING['eval_components']}": {"performance": 0.43},
+        f"{BENCHMARK_NAME_MAPPING['eval_computation_graphs']}": {"performance": 0.36}
     }
 }
 
@@ -144,9 +168,10 @@ class EvaluateBenchmark(Expression):
         return engine, rate_exception
 
     def evaluate_experiment(self, experiments, evals, n_runs, seeds, config, results, type='eval_in_context_associations'):
-        type = NAME_MAPPING[type]
+        type = BENCHMARK_NAME_MAPPING[type]
 
         for experiment in experiments:
+            experiment = MODEL_NAME_MAPPING[experiment]
             results[experiment][type] = {}
             results[experiment][type]['scores'] = []
             results[experiment][type]['total_runs'] = n_runs * len(evals) * len(seeds)
@@ -164,8 +189,9 @@ class EvaluateBenchmark(Expression):
                     for experiment in experiments:
                         # Prepare the engine
                         engine, rate_exception = self.prepare(experiment, seed, config, results, type)
+                        # set experiment name
+                        experiment = MODEL_NAME_MAPPING[experiment]
                         # Run the test function
-
                         # Use exponential backoff to handle API rate limit exceptions
                         @backoff.on_exception(backoff.expo, rate_exception, max_time=60)
                         def run_with_backoff(*args, **kwargs):
@@ -198,6 +224,7 @@ class EvaluateBenchmark(Expression):
 
         # Calculate the average scoring for associations
         for experiment in experiments:
+            experiment = MODEL_NAME_MAPPING[experiment]
             results[experiment][type] = {
                 'performance': np.sum(results[experiment][type]['scores']) / results[experiment][type]['total_runs'],
                 'average_time': np.mean(results[experiment][type]['total_time']),
@@ -206,10 +233,11 @@ class EvaluateBenchmark(Expression):
                 'runs': results[experiment][type]['run_list']
             }
 
-    def forward(self, experiments=['gpt4', 'llama', 'gpt3.5', 'gemini'], n_runs=3, seeds=[42, 77, 97], dummy=False):
+    def forward(self, experiments=['gpt4', 'llama', 'gpt3.5', 'zephyr', 'gemini', 'mistral'], n_runs=3, seeds=[42, 77, 97], dummy=False):
         # This dictionary will now hold the scoring for each test type
         results = {}
         for experiment in experiments:
+            experiment = MODEL_NAME_MAPPING[experiment]
             results[experiment] = {}
 
         # Load json config file
