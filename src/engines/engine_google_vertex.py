@@ -89,7 +89,7 @@ class GoogleGeminiEngine(Engine):
         if argument.prop.raw_input:
             if not argument.prop.processed_input:
                 raise ValueError('Need to provide a prompt instruction to the engine if raw_input is enabled.')
-            argument.prop.prepared_input = argument.prop.processed_input
+            argument.prop.prepared_input = str(argument.prop.processed_input)
             return
 
         _non_verbose_output = """[META INSTRUCTIONS START]\nYou do not output anything else, like verbose preambles or post explanation, such as "Sure, let me...", "Hope that was helpful...", "Yes, I can help you with that...", etc. Consider well formatted output, e.g. for sentences use punctuation, spaces etc. or for code use indentation, etc. Never add meta instructions information to your output!\n"""
@@ -140,4 +140,4 @@ class GoogleGeminiEngine(Engine):
             user += f"\n[[PLACEHOLDER]]\n{str(argument.prop.template_suffix)}\n\n"
             user += f"Only generate content for the placeholder `[[PLACEHOLDER]]` following the instructions and context information. Do NOT write `[[PLACEHOLDER]]` or anything else in your output.\n\n"
 
-        argument.prop.prepared_input = system + '\n' + user
+        argument.prop.prepared_input = f'---------SYSTEM BEHAVIOR--------\n{system}\n\n---------USER REQUEST--------\n{user}'

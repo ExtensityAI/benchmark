@@ -124,6 +124,11 @@ class EvaluateBenchmark(Expression):
             engine = LLaMACppClientEngine(host=config[experiment]['host'],
                                           port=config[experiment]['port'])
             EngineRepository.register('neurosymbolic', engine, allow_engine_override=True)
+        elif experiment == 'mistral':
+            # initialize the engine
+            engine = LLaMACppClientEngine(host=config[experiment]['host'],
+                                          port=config[experiment]['port'])
+            EngineRepository.register('neurosymbolic', engine, allow_engine_override=True)
 
         assert engine is not None, f'Engine {experiment} not found!'
         # Set the engine configuration
@@ -174,7 +179,15 @@ class EvaluateBenchmark(Expression):
                                 sleep(0.05) # Sleep for 50ms for min. API cooldown
                             end_time = time()  # End timing
                             elapsed_time = end_time - start_time
-                            results[experiment][type]['run_list'].append(f"RUN#: {r} {test_func.__name__}, Seed: {seed}, Time: {elapsed_time}, Info: {info}")
+                            entry = {
+                                'run': r,
+                                'test': test_func.__name__,
+                                'seed': seed,
+                                'time': elapsed_time,
+                                'info': info,
+                                'success': res
+                            }
+                            results[experiment][type]['run_list'].append(entry)
                             return res, elapsed_time, info['score']
                         # Run the test function with backoff
                         result, elapsed_time, score = run_with_backoff()
@@ -248,7 +261,7 @@ def run(args):
     )
 
     # Run benchmark
-    benchmark_results = benchmarker(experiments=['zephyr'],
+    benchmark_results = benchmarker(experiments=['mistral', 'zephyr', 'llama'],
                                     n_runs=1,
                                     seeds=[42],
                                     dummy=args.dummy)

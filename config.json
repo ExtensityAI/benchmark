@@ -18,5 +18,9 @@
     "zephyr": {
         "host": "http://localhost",
         "port": 8081
+    },
+    "mistral": {
+        "host": "http://localhost",
+        "port": 8082
     }
 }
