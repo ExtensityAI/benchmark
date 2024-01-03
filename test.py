@@ -72,6 +72,9 @@ def create_latex_result(data):
     # Prepare table content
     benchmark_rows = {bench_name: "" for bench_name in BENCHMARK_NAME_MAPPING.values()}
     for bench_name in BENCHMARK_NAME_MAPPING.values():
+        if bench_name not in list(data.keys()):
+            print(f"Skipping benchmark because not all results are computed. Did not find `{bench_name}` in `{data.keys()}`")
+            return
         # Initialize list to keep the scores for this benchmark to find the best model
         scores = [(model, values[bench_name]['performance']) for model, values in data.items()]
         best_score = max(scores, key=lambda x: x[1])[1]

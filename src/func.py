@@ -7,8 +7,9 @@ from tqdm import tqdm
 from time import sleep, time
 from openai import RateLimitError
 
-from symai import Expression
 from typing import List, Callable, Optional
+
+from symai import Expression
 from symai.functional import EngineRepository
 from symai.backend.engines.neurosymbolic.engine_openai_gptX_chat import GPTXChatEngine
 
@@ -31,12 +32,12 @@ BENCHMARK_NAME_MAPPING = {
 
 
 MODEL_NAME_MAPPING = {
-    'gpt4': 'GPT-4',
-    'gpt3.5': 'GPT-3.5',
-    'gemini': 'Gemini',
-    'llama': 'LlaMA 2',
-    'mistral': 'Mistral',
-    'zephyr': 'Zephyr'
+    'gpt4': 'GPT-4 Turbo',
+    'gpt3.5': 'GPT-3.5 Turbo',
+    'gemini': 'Gemini-Pro',
+    'llama': 'LlaMA 2 13B',
+    'mistral': 'Mistral 7B',
+    'zephyr': 'Zephyr 7B'
 }
 
 
@@ -156,6 +157,7 @@ class EvaluateBenchmark(Expression):
 
         assert engine is not None, f'Engine {experiment} not found!'
         # Set the engine configuration
+        experiment = MODEL_NAME_MAPPING[experiment]
         if not results[experiment][type]['engine']:
             results[experiment][type]['engine'] = str(engine.__class__)
 
@@ -181,7 +183,10 @@ class EvaluateBenchmark(Expression):
 
         print(f'Running {len(evals)} tests for {n_runs} runs, each with {len(seeds)} seeds per experiment.')
         # We alter between the test functions and the seeds per experiment since this creates a natural API cooldown between runs
-        for _, test_func in tqdm(evals):
+        total_experiments = len(evals) * n_runs * len(seeds) * len(experiments)
+        # set tqdm progress bar
+        progress = tqdm(total=total_experiments, desc=f'Running {type} benchmark')
+        for _, test_func in evals:
             for seed in seeds:
                 # Run the test function
                 for r in range(n_runs):
@@ -199,7 +204,7 @@ class EvaluateBenchmark(Expression):
                             try:
                                 res, info = test_func(*args, **kwargs)
                             except Exception as e:
-                                print('ERROR:', e) # Ignore exceptions and count as a failure
+                                print('EVAL ERROR:', e) # Ignore exceptions and count as a failure
                                 return False, 0.0, 0.0
                             finally:
                                 sleep(0.05) # Sleep for 50ms for min. API cooldown
@@ -221,6 +226,10 @@ class EvaluateBenchmark(Expression):
                         # Check if the test function passed
                         if result:
                             results[experiment][type]['scores'].append(score)  # Count scoring
+                        # Update progress bar
+                        progress.update(1)
+                        # print progress
+                        progress.set_postfix({'score': score, 'time': elapsed_time})
 
         # Calculate the average scoring for associations
         for experiment in experiments:
