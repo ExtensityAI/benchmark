@@ -1,16 +1,7 @@
-import copy
 import numpy as np
-from typing import List, Union
 
+from src.utils import normalize
 from symai import core_ext, Symbol, Expression, Interface, Function
-from symai.functional import EngineRepository
-
-
-success_score = {'score': 1.0}
-
-
-# register embeddings engine for all Symbols from plugin
-EngineRepository.register_from_plugin('embedding', plugin='ExtensityAI/embeddings', kwargs={'model': 'all-mpnet-base-v2'})
 
 
 class Category(Expression):
@@ -99,15 +90,11 @@ class MultiModalExpression(Expression):
             ori_url, page, content_sym, norm_score = presets()
             ori_url_sym = Symbol(ori_url)
             url         = self.extract('url')
-            url_sym     = Symbol(url)
-            score       = url_sym.similarity(ori_url_sym, metric='cosine')
+            score       = ori_url_sym.similarity(url, metric='cosine')
             scoring.append(score)
             res         = self.func(page)
-            res_sym     = Symbol(res)
             # normalize the score towards the original content
-            score       = content_sym.similarity(res_sym, metric='cosine')
-            score       = score / norm_score
-            score       = np.minimum(score, 1.0)
+            score       = content_sym.similarity(res, metric='cosine', normalize=normalize(norm_score))
             scoring.append(score)
 
         elif option == 2:

@@ -35,6 +35,17 @@
             ]
         },
         {
+            "name": "Run Program Synthesis",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/test.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "--program_synthesis"
+            ]
+        },
+        {
             "name": "Run Dummy",
             "type": "python",
             "request": "launch",

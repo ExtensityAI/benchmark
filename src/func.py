@@ -123,6 +123,8 @@ class EvaluateBenchmark(Expression):
         self.eval_program_synthesis = eval_program_synthesis
         self.eval_components = eval_components
         self.eval_computation_graphs = eval_computation_graphs
+        # Register embeddings engine globally for all Symbols from plugin
+        EngineRepository.register_from_plugin('embedding', plugin='ExtensityAI/embeddings', kwargs={'model': 'all-mpnet-base-v2'}, allow_engine_override=True)
 
     def prepare(self, experiment, seed, config, results, type):
         # Set the engine error rate exception if necessary
@@ -298,7 +300,7 @@ def run(args):
     )
 
     # Run benchmark
-    benchmark_results = benchmarker(experiments=['mistral', 'zephyr', 'llama'],
+    benchmark_results = benchmarker(experiments=['zephyr', 'llama'],
                                     n_runs=1,
                                     seeds=[42],
                                     dummy=args.dummy)
