@@ -108,7 +108,7 @@ def load_test_functions(module, prefix='test_'):
 
 # Define a function that raises an exception without any remedy
 def except_remedy(error, *args, **kwargs):
-    raise error # raise the error without any remedy
+    raise Exception(error) # raise the error without any remedy
 
 
 class EvaluateBenchmark(Expression):
@@ -177,15 +177,17 @@ class EvaluateBenchmark(Expression):
         for experiment in experiments:
             experiment = MODEL_NAME_MAPPING[experiment]
             results[experiment][type] = {}
-            results[experiment][type]['scores'] = []
+            results[experiment][type]['scores']     = []
+            results[experiment][type]['success']    = []
             results[experiment][type]['total_runs'] = n_runs * len(evals) * len(seeds)
             results[experiment][type]['total_time'] = []
-            results[experiment][type]['run_list'] = []
-            results[experiment][type]['engine'] = None
+            results[experiment][type]['run_list']   = []
+            results[experiment][type]['engine']     = None
 
         print(f'Running {len(evals)} tests for {n_runs} runs, each with {len(seeds)} seeds per experiment.')
         # We alter between the test functions and the seeds per experiment since this creates a natural API cooldown between runs
         total_experiments = len(evals) * n_runs * len(seeds) * len(experiments)
+        experiment_cnt    = 0
         # set tqdm progress bar
         progress = tqdm(total=total_experiments, desc=f'Running {type} benchmark')
         for _, test_func in evals:
@@ -202,7 +204,8 @@ class EvaluateBenchmark(Expression):
                         # Use exponential backoff to handle API rate limit exceptions
                         @backoff.on_exception(backoff.expo, rate_exception, max_time=60)
                         def run_with_backoff(*args, **kwargs):
-                            start_time = time()  # Start timing
+                            start_time      = time()  # Start timing
+                            experiment_cnt += 1
                             try:
                                 res, info = test_func(*args, **kwargs)
                             except Exception as e:
@@ -218,26 +221,29 @@ class EvaluateBenchmark(Expression):
                                 'seed': seed,
                                 'time': elapsed_time,
                                 'info': info,
-                                'success': res
+                                'success': res,
+                                'scores': info['scores']
                             }
                             results[experiment][type]['run_list'].append(entry)
-                            return res, elapsed_time, info['score']
+                            return res, elapsed_time, info['scores']
                         # Run the test function with backoff
-                        result, elapsed_time, score = run_with_backoff()
-                        results[experiment][type]['total_time'].append(elapsed_time)  # Accumulate time
+                        result, elapsed_time, scores = run_with_backoff()
+                        results[experiment][type]['total_time'].append(elapsed_time)     # Accumulate time
                         # Check if the test function passed
+                        results[experiment][type]['scores'].append(np.mean(scores))      # Count scoring
                         if result:
-                            results[experiment][type]['scores'].append(score)  # Count scoring
+                            results[experiment][type]['success'].append(1.0)    # Count success
                         # Update progress bar
                         progress.update(1)
                         # print progress
-                        progress.set_postfix({'score': score, 'time': elapsed_time})
+                        progress.set_postfix({f'{experiment}: mean score': np.sum(results[experiment][type]['scores']) / experiment_cnt, 'time': elapsed_time})
 
         # Calculate the average scoring for associations
         for experiment in experiments:
             experiment = MODEL_NAME_MAPPING[experiment]
             results[experiment][type] = {
-                'performance': np.sum(results[experiment][type]['scores']) / results[experiment][type]['total_runs'],
+                'performance':  np.sum(results[experiment][type]['scores'])  / results[experiment][type]['total_runs'],
+                'success_rate': np.sum(results[experiment][type]['success']) / results[experiment][type]['total_runs'],
                 'average_time': np.mean(results[experiment][type]['total_time']),
                 'unique_tests': len(evals),
                 'seeds': seeds,
@@ -300,12 +306,12 @@ def run(args):
     )
 
     # Run benchmark
-    benchmark_results = benchmarker(experiments=['zephyr', 'llama'],
-                                    n_runs=1,
-                                    seeds=[42],
+    benchmark_results = benchmarker(experiments=['zephyr'],
+                                    n_runs=2,
+                                    seeds=[42, 3],
                                     dummy=args.dummy)
 
     # Print benchmark results
-    print("In-context associations results:", benchmark_results)
+    print("Results:", benchmark_results)
 
     return benchmark_results

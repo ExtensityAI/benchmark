@@ -46,6 +46,31 @@
             ]
         },
         {
+            "name": "Run Components",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/test.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "--components"
+            ]
+        },
+        {
+            "name": "Multi-Run",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/test.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "--context_associations",
+                "--program_synthesis",
+                "--multimodal_bindings",
+                "--components"
+            ]
+        },
+        {
             "name": "Run Dummy",
             "type": "python",
             "request": "launch",

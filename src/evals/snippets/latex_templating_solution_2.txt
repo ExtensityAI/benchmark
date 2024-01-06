@@ -3,9 +3,6 @@ def create_latex_result(data):
     totalscores = {model: 0.0 for model in data.keys()}
     benchmarkrows = {bench_name: "" for bench_name in BENCHMARK_NAME_MAPPING.values()}
     for bench_name in BENCHMARK_NAME_MAPPING.values():
-        if bench_name not in list(data.keys()):
-            print(f"Skipping benchmark because not all results are computed. Did not find `{bench_name}` in `{data.keys()}`")
-            return
         scores = [(model, values[bench_name]['performance']) for model, values in data.items()]
         best_score = max(scores, key=lambda x: x[1])[1]
         row = f"{bench_name}"

@@ -2,6 +2,6 @@ import copy
 from symai import Symbol
 
 
-success_score = {'score': 1.0}
+success_score = {'scores': 1.0}
 
 

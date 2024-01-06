@@ -1,6 +1,6 @@
 import numpy as np
 
-from src.utils import normalize
+from src.utils import normalize, RANDOM_SEQUENCE
 from symai import core_ext, Symbol, Expression, Interface, Function
 
 
@@ -69,10 +69,12 @@ class MultiModalExpression(Expression):
         option, score = self.detect_option(assertion)
         scoring.append(score)
 
+        # mathematical formula
         if option == 0:
             formula = self.extract('mathematical formula')
             # subtypes of mathematical formula
             if formula.isinstanceof('linear function'):
+                res      = presets()
                 # prepare for wolframalpha
                 question = self.extract('question sentence')
                 req      = question.extract('what is requested?')
@@ -86,34 +88,40 @@ class MultiModalExpression(Expression):
             else:
                 raise Exception('Unknown formula type')
 
+        # website content scraping and crawling
         elif option == 1:
-            ori_url, page, content_sym, norm_score = presets()
+            ori_url, page, content_sym, base_score, rand_score = presets()
             ori_url_sym = Symbol(ori_url)
             url         = self.extract('url')
             score       = ori_url_sym.similarity(url, metric='cosine')
             scoring.append(score)
             res         = self.func(page)
             # normalize the score towards the original content
-            score       = content_sym.similarity(res, metric='cosine', normalize=normalize(norm_score))
+            score       = content_sym.similarity(res, metric='cosine', normalize=normalize(base_score, rand_score))
             scoring.append(score)
 
+        # search engine query
         elif option == 2:
             query = self.extract('search engine query')
             res   = self.search(query)
             res   = self.func(res)
 
+        # optical character recognition
         elif option == 3:
             query = self.extract('image url')
             res   = self.ocr(query)
 
+        # image rendering
         elif option == 4:
             query = self.extract('image url')
             res   = self.rendering(query)
 
+        # image captioning
         elif option == 5:
             image = self.extract('image path')
             res   = self.captioning(image)
 
+        # audio transcription
         elif option == 6:
             audio = self.extract('audio path')
             res   = self.transcribe(audio)
@@ -121,7 +129,7 @@ class MultiModalExpression(Expression):
         else:
             raise Exception('Unknown expression type')
 
-        return np.mean(scoring)
+        return scoring
 
 
 # def test_comparison():
@@ -131,21 +139,8 @@ class MultiModalExpression(Expression):
 #     assert res, f'Failed to find yes in {str(res)}'
 
 
-# def test_linear_function():
-#     val = "A line parallel to y = 4x + 6 passes through (5, 10). What is the y-coordinate of the point where this line crosses the y-axis?"
-#     expr = MultiModalExpression(val)
-#     res = expr()
-#     assert res == '6', f'Failed to find 6 in {str(res)}'
-
-
-# def test_causal_expression():
-#     val = "Bob has two sons, John and Jay. Jay has one brother and father. The father has two sons. Jay's brother has a brother and a father. Who is Jay's brother."
-#     expr = MultiModalExpression(val)
-#     res = expr()
-#     assert res == '4', f'Failed to find 4 in {str(res)}'
-
-
 def test_website_scraping():
+    # scraped content
     content = """ChatGPT back online after ‘major outage,’ OpenAI says
 PUBLISHED THU, DEC 14 20231:58 AM EST
 
@@ -177,7 +172,8 @@ The Microsoft
 
     content_sym = Symbol(content)
     summary_sym = Symbol(summary)
-    norm_score  = content_sym.similarity(summary_sym, metric='cosine')
-    scoring     = expr(lambda: 1, lambda: (url, content, content_sym, norm_score))
+    base_score  = content_sym.similarity(summary_sym, metric='cosine')
+    rand_score  = content_sym.similarity(Symbol(RANDOM_SEQUENCE), metric='cosine')
+    scoring     = expr(lambda: 1, lambda: (url, content, content_sym, base_score, rand_score))
 
-    return True, {'score': scoring}
+    return True, {'scores': scoring}

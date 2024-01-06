@@ -72,19 +72,6 @@ DUMMY_DATA = {
 }
 
 
-
-def parse_args():
-    parser = argparse.ArgumentParser(description='Run the benchmark.')
-    parser.add_argument('--context_associations', action='store_true', help='Run the in-context associations benchmark.')
-    parser.add_argument('--multimodal_bindings', action='store_true', help='Run the multimodal bindings benchmark.')
-    parser.add_argument('--program_synthesis', action='store_true', help='Run the program synthesis benchmark.')
-    parser.add_argument('--components', action='store_true', help='Run the components benchmark.')
-    parser.add_argument('--computation_graphs', action='store_true', help='Run the computation graphs benchmark.')
-    parser.add_argument('--all', action='store_true', help='Run all benchmarks.')
-    parser.add_argument('--dummy', action='store_true', help='Run the dummy benchmark.')
-    return parser.parse_args()
-
-
 LATEX_TEMPLATE = """
 \\begin{{figure*}}[ht]
   \\centering
@@ -121,15 +108,13 @@ LATEX_TEMPLATE = """
 """
 
 
-def create_latex_result(data):
-    latex_table = ''
-    # TODO: Write this function to create a latex table from the data
+#def create_latex_result(data):
+#    latex_table = ''
+#    # TODO: Write this function to create a latex table from the data
+#
+#    return latex_table
+{TODO}
 
-    return latex_table
 
-
-if __name__ == '__main__':
-    args = parse_args()
-    results = run(args)
-    create_latex_result(DUMMY_DATA)
-
+# assign result to global output variable
+_value_obj_ = create_latex_result(DUMMY_DATA)

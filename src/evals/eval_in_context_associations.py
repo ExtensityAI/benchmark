@@ -4,7 +4,7 @@ import numpy as np
 from symai import Symbol, Expression
 
 
-success_score = {'score': 1.0}
+success_score = {'scores': [1.0]}
 
 
 # Define basic test functions
