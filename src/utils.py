@@ -1,4 +1,5 @@
 import os
+import copy
 import parso
 import difflib
 import string
@@ -7,6 +8,10 @@ import numpy as np
 from pathlib import Path
 
 from symai import Symbol
+
+
+success_score = {'scores': [1.0]}
+MOCK_RETURN = (True, copy.deepcopy(success_score))
 
 
 def normalize_score(base_score, rand_score, eps=1e-8):

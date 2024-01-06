@@ -2,12 +2,16 @@ import copy
 import numpy as np
 
 from symai import Symbol, Expression
+from symai.utils import toggle_test
+
+from src.utils import MOCK_RETURN, success_score
 
 
-success_score = {'scores': [1.0]}
+ACTIVE = True
 
 
 # Define basic test functions
+@toggle_test(ACTIVE, default=MOCK_RETURN)
 def test_basic_prompt() -> bool:
     '''Sanity check test if the basic prompt works'''
     sym = Expression.prompt('''[Last Instruction]
@@ -19,9 +23,10 @@ Give the meaning of life a number, meaning that the answer to life, the universe
     # every model must pass this basic test
     res = '42' in str(sym)
     assert res, f'Failed to find 42 in {str(sym)}'
-    return True, copy.deepcopy(success_score)
+    return True, success_score
 
 
+@toggle_test(ACTIVE, default=MOCK_RETURN)
 def test_basic_prompt_2() -> bool:
     '''Sanity check test if the basic prompt works'''
     sym = Expression.prompt('''[Last Instruction]
@@ -33,64 +38,73 @@ Write the first 10 digits of Pi:
     # every model must pass this basic test
     res = '3.1415' in str(sym)
     assert res, f'Failed to find 3.1415 in {str(sym)}'
-    return True, copy.deepcopy(success_score)
+    return True, success_score
 
 
 # Define the test functions based on in-context learning associations and compositions
+@toggle_test(ACTIVE, default=MOCK_RETURN)
 def test_add_and_equals() -> bool:
     '''Test if the addition operator between two number symbols works'''
     sym = Symbol(1) + Symbol(2)
-    return str(sym) == '3', copy.deepcopy(success_score)
+    return str(sym) == '3', success_score
 
 
+@toggle_test(ACTIVE, default=MOCK_RETURN)
 def test_add_and_equals() -> bool:
     '''Test if the addition operator between a number symbol and linguistic number symbol works'''
     sym = Symbol(17) + 'two' # auto cast to Symbol
-    return str(sym) == '19', copy.deepcopy(success_score)
+    return str(sym) == '19', success_score
 
 
+@toggle_test(ACTIVE, default=MOCK_RETURN)
 def test_add_and_equals() -> bool:
     '''Test if the addition operator between a large number symbol and linguistic number symbol works'''
     sym = 'two hundred and thirty four' + Symbol(7000) # auto cast to Symbol
-    return str(sym) == '7234', copy.deepcopy(success_score)
+    return str(sym) == '7234', success_score
 
 
+@toggle_test(ACTIVE, default=MOCK_RETURN)
 def test_check_pi() -> bool:
     '''Test if a fuzzy equality between pi string symbol and an number approximation symbol works'''
     sym = Symbol('pi') # semantic understanding of pi
     # test if pi is equal to 3.14159265... by approximating
-    return sym == '3.14159265...', copy.deepcopy(success_score)
+    return sym == '3.14159265...', success_score
 
 
+@toggle_test(ACTIVE, default=MOCK_RETURN)
 def test_check_pi_2() -> bool:
     '''Test if a fuzzy equality between np.pi number symbol and an number approximation symbol works'''
     sym = Symbol(np.pi) # has high floating point precision
     # test if pi is equal to 3.14159265... by approximating
-    return sym == '3.14159265...', copy.deepcopy(success_score)
+    return sym == '3.14159265...', success_score
 
 
+@toggle_test(ACTIVE, default=MOCK_RETURN)
 def test_sub_and_contains() -> bool:
     '''Test if a semantic subtraction operator between two symbols works'''
     # semantic understanding of subtraction
     res = (Symbol('Hello my friend.') - Symbol('friend')) + 'enemy'
     res = str(res).lower().strip()
-    return ' enemy.' in res, copy.deepcopy(success_score)
+    return ' enemy.' in res, success_score
 
 
+@toggle_test(ACTIVE, default=MOCK_RETURN)
 def test_compare() -> bool:
     '''Test if a comparison operator between two number symbols works'''
     res = Symbol(10) > Symbol(5)
     res = str(res)
-    return res == 'True', copy.deepcopy(success_score)
+    return res == 'True', success_score
 
 
+@toggle_test(ACTIVE, default=MOCK_RETURN)
 def test_compare_2() -> bool:
     '''Test if a semantic comparison operator between two symbols works'''
     res = Symbol(10) > Symbol('fifteen thousand')
     res = str(res)
-    return res == 'False', copy.deepcopy(success_score)
+    return res == 'False', success_score
 
 
+@toggle_test(ACTIVE, default=MOCK_RETURN)
 def test_AND_logic():
     '''Test if logical AND can be used to combine two symbols'''
     res = Symbol('the horn only sounds on Sundays') & Symbol('I hear the horn')
@@ -102,9 +116,10 @@ def test_AND_logic():
     assert val, f'Failed to find horn in {res}'
     val = 'hear' in res
     assert val, f'Failed to find hear in {res}'
-    return True, copy.deepcopy(success_score)
+    return True, success_score
 
 
+@toggle_test(ACTIVE, default=MOCK_RETURN)
 def test_OR_logic():
     '''Test if logical OR can be used to combine two symbols'''
     subject = 'cat'
@@ -113,9 +128,10 @@ def test_OR_logic():
     # check if the OR operator returns either a true value or it retains the subject
     ret = 'true' in str(res) or 'cat' in str(res)
     assert ret, f'Failed to find cat in {res}'
-    return True, copy.deepcopy(success_score)
+    return True, success_score
 
 
+@toggle_test(ACTIVE, default=MOCK_RETURN)
 def test_XOR_logic():
     '''Test if logical XOR can be used to combine two symbols'''
     res = Symbol('The duck quaks.') ^ Symbol('The duck does not quak.')
@@ -123,9 +139,10 @@ def test_XOR_logic():
     # check if the XOR operator returns False or it retains the main subject
     ret = 'false' in str(res) or ('duck' in str(res) and 'quack' in str(res))
     assert ret, f'Failed to find duck in {res}'
-    return True, copy.deepcopy(success_score)
+    return True, success_score
 
 
+@toggle_test(ACTIVE, default=MOCK_RETURN)
 def test_insert_lshift():
     '''Test if information can be inserted into a symbol using the LSHIFT operator'''
     sym = Symbol('I love to eat apples')
@@ -135,9 +152,10 @@ def test_insert_lshift():
     assert 'love' in str(res), f'Failed to find love in {res}'
     assert 'apples and bananas' in str(res), f'Failed to find apples and bananas in {res}'
     assert 'eat' in str(res), f'Failed to find eat in {res}'
-    return True, copy.deepcopy(success_score)
+    return True, success_score
 
 
+@toggle_test(ACTIVE, default=MOCK_RETURN)
 def test_insert_rshift():
     '''Test if information can be inserted into a symbol using the RSHIFT operator'''
     sym = Symbol('I love to eat apples')
@@ -147,9 +165,10 @@ def test_insert_rshift():
     assert 'love' in res, f'Failed to find love in {res}'
     assert 'apples and bananas' in res, f'Failed to find apples and bananas in {res}'
     assert 'eat' in res, f'Failed to find eat in {res}'
-    return True, copy.deepcopy(success_score)
+    return True, success_score
 
 
+@toggle_test(ACTIVE, default=MOCK_RETURN)
 def test_extract():
     '''Test if information can be extracted from a symbol using the EXTRACT operator'''
     sym = Symbol('I have an iPhone from Apple. And it is not cheap. I love to eat bananas, mangos, and oranges. My hobbies are playing football and basketball.')
@@ -159,9 +178,10 @@ def test_extract():
     assert 'bananas' in res, f'Failed to find bananas in {res}'
     assert 'mangos'  in res, f'Failed to find mangos in {res}'
     assert 'oranges' in res, f'Failed to find oranges in {res}'
-    return True, copy.deepcopy(success_score)
+    return True, success_score
 
 
+@toggle_test(ACTIVE, default=MOCK_RETURN)
 def test_extract_tokens():
     '''Test if number information can be extracted from a symbol using the EXTRACT operator'''
     sym = Symbol("""Exception: Failed to query GPT-3 after 3 retries. Errors: [InvalidRequestError(message="This model's maximum context length is 4097 tokens, however you requested 7410 tokens (2988 in your prompt; 4422 for the completion). Please reduce your prompt; or completion length.",
@@ -169,9 +189,10 @@ def test_extract_tokens():
     res = sym.extract('requested tokens').cast(int)
     # check if the EXTRACT operator gets the correct number of tokens
     assert res == 7410, f'Failed to find 7410 in {str(res)}'
-    return True, copy.deepcopy(success_score)
+    return True, success_score
 
 
+@toggle_test(ACTIVE, default=MOCK_RETURN)
 def test_filter():
     '''Test if filtering information can be applied to a symbol using the FILTER operator'''
     sym = Symbol('Physics, Sports, Mathematics, Music, Art, Theater, Writing')
@@ -185,9 +206,10 @@ def test_filter():
     assert 'theater' not in res, f'Failed to remove theater in {res}'
     assert 'writing' not in res, f'Failed to remove writing in {res}'
     assert 'sports' not in res, f'Failed to remove sports in {res}'
-    return True, copy.deepcopy(success_score)
+    return True, success_score
 
 
+@toggle_test(ACTIVE, default=MOCK_RETURN)
 def test_clean():
     '''Test if cleaning information can be applied to a symbol using the CLEAN operator'''
     sym = Symbol('Hello *&&7amp;;; \t\t\t\nWorld')
@@ -195,5 +217,5 @@ def test_clean():
     res = str(res).lower().strip()
     # check if the CLEAN operator retains the 2 essential words
     assert 'hello world' == res, f'Failed to find hello world in {res}'
-    return True, copy.deepcopy(success_score)
+    return True, success_score
 

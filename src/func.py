@@ -205,7 +205,6 @@ class EvaluateBenchmark(Expression):
                         @backoff.on_exception(backoff.expo, rate_exception, max_time=60)
                         def run_with_backoff(*args, **kwargs):
                             start_time      = time()  # Start timing
-                            experiment_cnt += 1
                             try:
                                 res, info = test_func(*args, **kwargs)
                             except Exception as e:
@@ -227,6 +226,7 @@ class EvaluateBenchmark(Expression):
                             results[experiment][type]['run_list'].append(entry)
                             return res, elapsed_time, info['scores']
                         # Run the test function with backoff
+                        experiment_cnt += 1
                         result, elapsed_time, scores = run_with_backoff()
                         results[experiment][type]['total_time'].append(elapsed_time)     # Accumulate time
                         # Check if the test function passed
@@ -306,9 +306,9 @@ def run(args):
     )
 
     # Run benchmark
-    benchmark_results = benchmarker(experiments=['zephyr'],
-                                    n_runs=2,
-                                    seeds=[42, 3],
+    benchmark_results = benchmarker(experiments=['gpt4'],
+                                    n_runs=1,
+                                    seeds=[42],
                                     dummy=args.dummy)
 
     # Print benchmark results

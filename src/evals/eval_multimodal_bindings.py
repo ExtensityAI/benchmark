@@ -1,7 +1,9 @@
-import numpy as np
-
 from src.utils import normalize, RANDOM_SEQUENCE
 from symai import core_ext, Symbol, Expression, Interface, Function
+from symai.utils import toggle_test, MOCK_RETURN
+
+
+ACTIVE = True
 
 
 class Category(Expression):
@@ -139,6 +141,7 @@ class MultiModalExpression(Expression):
 #     assert res, f'Failed to find yes in {str(res)}'
 
 
+@toggle_test(ACTIVE, default=MOCK_RETURN)
 def test_website_scraping():
     # scraped content
     content = """ChatGPT back online after ‘major outage,’ OpenAI says

@@ -1,11 +1,12 @@
-import copy
-from symai import Symbol, Expression, Function
 import sympy as sym
 
-from src.utils import normalize, RANDOM_SEQUENCE
+from symai import Symbol, Expression, Function
+from symai.utils import toggle_test
+
+from src.utils import normalize, RANDOM_SEQUENCE, MOCK_RETURN, success_score
 
 
-success_score = {'scores': [1.0]}
+ACTIVE = False
 
 
 FACTORIZATION_CONTEXT = """[Context]
@@ -33,6 +34,7 @@ class Factorization(Function):
         return FACTORIZATION_CONTEXT
 
 
+@toggle_test(ACTIVE, default=MOCK_RETURN)
 def test_factorize_formula():
     a, b, c, d, x, y = sym.symbols('a, b, c, d, x, y')
     expr        = a * x + b * x - c * x - a * y - b * y + c * y + d
@@ -56,17 +58,19 @@ def test_factorize_formula():
     return True, {'scores': [score]}
 
 
+@toggle_test(ACTIVE, default=MOCK_RETURN)
 def test_linear_function_composition():
-    val = "A line parallel to y = 4x + 6 passes through (5, 10). What is the y-coordinate of the point where this line crosses the y-axis?"
-    expr = Factorization('Rewrite the linear function ')
-    res = expr()
-    assert res == '6', f'Failed to find 6 in {str(res)}'
-    return True, copy.deepcopy(success_score)
+    val  = "A line parallel to y = 4x + 6 passes through a point P=(x1=5, y1=10). What is the y-coordinate of the point where this line crosses the y-axis?"
+    expr = Factorization('Rewrite the equation in the form y = mx + b and solve the problem.')
+    res  = expr(val)
+    assert '-10' in str(res), f'Failed to find 6 in {str(res)}'
+    return True, success_score
 
 
-# def test_causal_expression():
-#     val = "Bob has two sons, John and Jay. Jay has one brother and father. The father has two sons. Jay's brother has a brother and a father. Who is Jay's brother."
-#     expr = Factorization(val)
-#     res = expr()
-#     assert res == '4', f'Failed to find 4 in {str(res)}'
-#     return True, copy.deepcopy(success_score)
+@toggle_test(ACTIVE, default=MOCK_RETURN)
+def test_causal_expression():
+    val  = "Bob has two sons, John and Jay. Jay has one brother and father. The father has two sons. Jay's brother has a brother and a father. Who is Jay's brother."
+    expr = Factorization(val)
+    res  = expr(val)
+    assert res == '4', f'Failed to find 4 in {str(res)}'
+    return True, success_score

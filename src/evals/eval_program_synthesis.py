@@ -1,17 +1,19 @@
 import os
-import numpy as np
 
-from src.utils import normalize, rand_ast_similarity, ast_similarity, RANDOM_SEQUENCE
+from src.utils import normalize, rand_ast_similarity, ast_similarity, RANDOM_SEQUENCE, MOCK_RETURN
 
 from symai import Symbol, Conversation
 from symai.components import FileReader, Execute
 from symai.processor import ProcessorPipeline
 from symai.post_processors import StripPostProcessor, CodeExtractPostProcessor
+from symai.utils import toggle_test
 
 
+ACTIVE = True
 cur_file_dir = os.path.dirname(os.path.abspath(__file__))
 
 
+@toggle_test(ACTIVE, default=MOCK_RETURN)
 def test_latex_templating():
     # Create a template
     template = os.path.join(cur_file_dir, 'snippets/latex_templating_problem.txt')
