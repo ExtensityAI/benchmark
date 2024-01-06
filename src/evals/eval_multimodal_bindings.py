@@ -1,6 +1,6 @@
-from src.utils import normalize, RANDOM_SEQUENCE
+from src.utils import normalize, RANDOM_SEQUENCE, MOCK_RETURN
 from symai import core_ext, Symbol, Expression, Interface, Function
-from symai.utils import toggle_test, MOCK_RETURN
+from symai.utils import toggle_test
 
 
 ACTIVE = True
