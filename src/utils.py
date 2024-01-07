@@ -46,7 +46,7 @@ def tree_to_str(node):
     return f"{node.type}({children_str})"
 
 
-def rand_ast_similarity(tree):
+def rand_ast_similarity(tree, random_sequence=RANDOM_SEQUENCE):
     if (isinstance(tree, str) or isinstance(tree, Path)) and os.path.exists(tree):
         tree, _ = parse_file_to_ast(tree)
     elif isinstance(tree, str):
@@ -56,7 +56,7 @@ def rand_ast_similarity(tree):
     # Convert parse trees to string representations
     str_     = tree_to_str(tree)
     # Generate a random parse tree
-    random_tree  = parso.parse(RANDOM_SEQUENCE)
+    random_tree  = parso.parse(random_sequence)
     randstr      = tree_to_str(random_tree)
     # Random string similarity
     matcher         = difflib.SequenceMatcher(None, str_, randstr)

@@ -15,7 +15,10 @@ cur_file_dir = os.path.dirname(os.path.abspath(__file__))
 
 @toggle_test(ACTIVE, default=MOCK_RETURN)
 def test_latex_templating():
-    task     = """[Task]
+    rand_task = """[Task]
+    Create a function that takes in the values as data and parses the LaTeX table rows and columns based on the data results. The table should follow the latex template format and populate the rows table as indicated by the placeholder variables. Mark the best performing model per row with bold text. At the bottom of the benchmarks, place the values of the total row by computing the average over all columns and populating the value entry in the template.
+    """
+    task      = """[Task]
 Create a function `create_latex_result` that takes in the `benchmark_results` as `data` and parses the LaTeX table rows and columns based on the `data` results. The table should follow the `latex_template` format and populate the rows table as indicated by the placeholder variables. Mark the best performing model per row with bold text. At the bottom of the benchmarks, place the values of the total row by computing the average over all columns and populating the `total_values` entry in the `latex_template`.
 The table should be returned as a string by the function.
 All required imports are already provided. The code of the `create_latex_result` function should be written between a
@@ -37,7 +40,7 @@ No other functions or explanations are required.
     solution1  = Symbol(reader(os.path.join(cur_file_dir, 'snippets/latex_templating_solution_1.txt')))
     solution2  = Symbol(reader(os.path.join(cur_file_dir, 'snippets/latex_templating_solution_2.txt')))
     base_score = solution1.similarity(solution2)
-    rand_score = solution1.similarity(RANDOM_SEQUENCE+task) # remove the chance of simply rephrasing the task
+    rand_score = solution1.similarity(RANDOM_SEQUENCE+rand_task) # remove the chance of simply rephrasing the task
     score      = code.similarity(solution1, normalize=normalize(base_score, rand_score))
     scoring.append(score)
 
@@ -45,7 +48,8 @@ No other functions or explanations are required.
     solution1  = Symbol(solution1, callables={'similarity': ast_similarity})
     # compute again normalization score but this time for AST similarity
     base_score = solution1.similarity(solution2)
-    rand_score = 0.5*(rand_ast_similarity(solution1) + rand_ast_similarity(solution2))
+    random_seq = RANDOM_SEQUENCE+rand_task # remove the chance of parsing sub-sequence from the task description
+    rand_score = 0.5*(rand_ast_similarity(solution1, random_seq) + rand_ast_similarity(solution2, random_seq))
     score      = solution1.similarity(code, normalize=normalize(base_score, rand_score))
     scoring.append(score)
 
