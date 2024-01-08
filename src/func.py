@@ -306,7 +306,7 @@ def run(args):
     )
 
     # Run benchmark
-    benchmark_results = benchmarker(experiments=['gemini'],
+    benchmark_results = benchmarker(experiments=['gpt4'],
                                     n_runs=1,
                                     seeds=[42],
                                     dummy=args.dummy)

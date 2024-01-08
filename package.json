@@ -13,6 +13,7 @@
         "type": "EvaluateBenchmark"
     },
     "dependencies": [
-        "ExtensityAI/llamacpp"
+        "ExtensityAI/llamacpp",
+        "ExtensityAI/tuning"
     ]
 }

@@ -57,6 +57,17 @@
             ]
         },
         {
+            "name": "Run Computation Graphs",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/test.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "--computation_graphs"
+            ]
+        },
+        {
             "name": "Multi-Run",
             "type": "python",
             "request": "launch",
@@ -67,7 +78,8 @@
                 "--context_associations",
                 "--program_synthesis",
                 "--multimodal_bindings",
-                "--components"
+                "--components",
+                "--computation_graphs"
             ]
         },
         {

@@ -22,8 +22,9 @@ def parse_args():
 LATEX_TEMPLATE = """
 \\begin{{figure*}}[ht]
   \\centering
-  \\begin{{minipage}}{{.57\\textwidth}}
+  \\begin{{minipage}}{{.6\\textwidth}}
     \\centering
+    \\begin{{adjustbox}}{{max width=\\linewidth}}
     \\begin{{tabular}}{{lcccccc}}
       \\toprule
       \\textbf{{Benchmarks}} &  {model_names} \\\\
@@ -37,20 +38,19 @@ LATEX_TEMPLATE = """
       \\textbf{{Total}} & {total_row} \\\\
       \\bottomrule
     \\end{{tabular}}
-    % You could also add a subcaption specific to the table here if needed (use the subcaption package)
-    % \\subcaption{{Performance benchmark results.}}
+    \\end{{adjustbox}}
     \\label{{tab:benchmark_results}}
   \\end{{minipage}}%
   ~
-  \\begin{{minipage}}{{.43\\textwidth}}
+  \\begin{{minipage}}{{.4\\textwidth}}
     \\centering
+    \\begin{{adjustbox}}{{max width=\\linewidth}}
     \\includegraphics[width=\\linewidth]{{images/benchmark_comparison_chart.pdf}}
-    % You could also add a subcaption specific to the figure here if needed (use the subcaption package)
-    % \\subcaption{{Benchmark comparison chart.}}
+    \\end{{adjustbox}}
     \\label{{fig:spider_plot}}
   \\end{{minipage}}
   \\caption{{Placeholder for performance benchmarks and comparison chart for various models.}}
-  \\label{{fig:my_label}} % General label for the whole figure (both image and table)
+  \\label{{fig:my_label}}
 \\end{{figure*}}
 """
 
