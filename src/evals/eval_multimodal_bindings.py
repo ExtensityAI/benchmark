@@ -81,7 +81,7 @@ class MultiModalExpression(Expression):
                 question = self.extract('question sentence')
                 req      = question.extract('what is requested?')
                 x        = self.extract('coordinate point (.,.)') # get coordinate point / could also ask for other points
-                query    = formula @ f', point x = {x}' @ f', solve {req}' # concatenate to the question and formula
+                query    = formula | f', point x = {x}' | f', solve {req}' # concatenate to the question and formula
                 res      = self.solver(query)
 
             elif formula.isinstanceof('number comparison'):
