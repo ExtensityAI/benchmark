@@ -156,6 +156,7 @@ class Program(Expression):
 
 class MetaProgram(Expression):
     pass # TODO: implement the meta-programming interface
+# TODO: compare linear unrolling of the program with the meta-programming scheduling
 
 
 def test_program():

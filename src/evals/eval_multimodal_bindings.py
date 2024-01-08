@@ -180,3 +180,7 @@ The Microsoft
     scoring     = expr(lambda: 1, lambda: (url, content, content_sym, base_score, rand_score))
 
     return True, {'scores': scoring}
+
+
+# TODO: add tests also using LLaVA and Whisper to evaluate multi-modal expressions
+# Failures in other modalities are applicable to the score since we evaluate the overall integration with the framework not individual neuro-symbolic engines

@@ -184,3 +184,7 @@ ParentOf(x, y) <- IS(x, parent) AND IS(y, child);
         scoring.append(1.0)
         return True, {'scores': scoring}
 
+# TODO: Write experiment of Personas as function f(x_t, s1_0) and g(y_t, s2_0) where t is time, x is input of agent 1, y is input of agent 2, s1_0 and s2_0 are the starting states of the agents, and f and g are the functions that map the input to the output.
+
+
+

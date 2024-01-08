@@ -10,6 +10,11 @@ from src.utils import MOCK_RETURN, success_score
 ACTIVE = True
 
 
+# TODO: allow for True / False contains checks since similarity is also a fuzzy check of boolean values
+# expect exact results for True / False checks
+# go over the more complex tests with semantic interpretations
+
+
 # Define basic test functions
 @toggle_test(ACTIVE, default=MOCK_RETURN)
 def test_basic_prompt() -> bool:
