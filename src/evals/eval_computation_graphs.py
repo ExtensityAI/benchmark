@@ -1,19 +1,66 @@
+import os
+
+from datetime import datetime
+from ast import List
+
 from symai import Symbol, Expression, Function, Interface
-from symai.components import Choice, Execute, Sequence
+from symai.components import Choice, Execute, Sequence, FileReader
+from symai.processor import ProcessorPipeline
+from symai.constraints import DictFormatConstraint
+from symai.post_processors import StripPostProcessor, CodeExtractPostProcessor, JsonTruncateMarkdownPostProcessor
+from symai.pre_processors import PreProcessor
 
 
-DataDictionary = {}
-TaskList       = []
+DataDictionary = Symbol({})
 
 
 class Store(Expression):
     def forward(self, key, data, *args, **kwargs):
-        DataDictionary[key] = data
+        # currently use hard-matching
+        DataDictionary.value[key] = data
 
 
 class Recall(Expression):
     def forward(self, key, *args, **kwargs):
-        return DataDictionary.get(key, None)
+        # currently use hard-matching
+        try:
+            return DataDictionary[key]
+        except KeyError:
+            return None
+
+
+class Memory(Function):
+    def __init__(self, **kwargs):
+        super().__init__("Your goal is to create a short description of the program using the key and execution flow of the context for the stack trace:", **kwargs)
+        self._store             = Store()
+        self._recall            = Recall(iterate_nesy=True) # allow to iterate with dict[key] over the neuro-symbolic engine
+        self._value: List[str]  = []
+
+    def forward(self, *args, **kwargs):
+        # use store and recall functions to store and recall data from memory
+        raise NotImplementedError
+
+    def store(self, key, data):
+        result = super().forward(key | data)
+        self._store(key, data)
+        # get execution timestamp
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        self.value.append(f"EXEC#: {len(self.value)+1} TIMESTAMP:{timestamp} | Store data: {key} = {result}")
+
+    def recall(self, key):
+        result = super().forward(key)
+        self._recall(key)
+        self.value.append(f"Recall data: {key} = {result}")
+        return result
+
+    @property
+    def static_context(self):
+        return """[Description]
+Your goal is to store and recall data from memory using the `store` and `recall` functions.
+The `store` function takes in a `key` and `data` argument and stores the data in a dictionary.
+The `recall` function takes in a `key` argument and returns the data stored in the dictionary.
+The `trace` function keeps track of the `key` and from which context the `store` and `recall` functions were called to function like a stack trace and description of the execution flow.
+"""
 
 
 class TaskExtraction(Function):
@@ -42,6 +89,14 @@ Instruction: "Write a document about the history of AI."
 
 
 class CodeGeneration(Function):
+    def __init__(self):
+        super().__init__('Generate the code following the instructions:')
+        self.processors = ProcessorPipeline([StripPostProcessor(), CodeExtractPostProcessor()])
+
+    def forward(self, instruct, *args, **kwargs):
+        result = super().forward(instruct)
+        return self.processors(str(result), None)
+
     @property
     def static_context(self):
         return """[Description]
@@ -56,20 +111,20 @@ class TemplateExpression(Expression):
         ```
         return result
 
-All code is executed in the same Python process. Expect all task expressions and functions to be defined in the same process. Generate the code within a ```python # TODO: ``` code block as shown in the example.
+All code is executed in the same Python process. Expect all task expressions and functions to be defined in the same process. Generate the code within a ```python # TODO: ``` code block as shown in the example. The code must be self-contained, include all imports and executable.
 """
 
 
 FUNCTIONS = {"""
 >>>[SEARCH ENGINE]
-# Search the web using the Google search engine.
+# Search the web using the Google search engine to find information of topics, people, or places. Used for searching facts or information.
 expr = Interface('serpapi')
 res  = expr('search engine query') # example query: "weather in New York"
 res # str containing the weather report
 <<<""": Interface('serpapi'),
 """
 >>>[WEB BROWSER]
-# Using the Selenium web driver to get the web page source content.
+# Using the Selenium web driver to get the content of a web page.
 expr = Interface('selenium')
 res  = expr('web URL') # example URL: https://www.google.com
 res  # str containing the web page source content
@@ -82,92 +137,179 @@ expr('shell command') # example command: 'ls -l'
 <<<""": Interface('terminal'),
 """
 >>>[LARGE LANGUAGE MODEL]
-# Using a large language model to query information, follow instructions, or generate text.
-expr = Function('LLM query or instruction') # example query: 'Extract temperature from the weather report.'
-res  = expr()
-res  # str containing the query result or generated text
-<<<""": Function('Follow the user instructions:'),
-"""
->>>[TASK EXTRACTION]
-# Using a large language model to extract tasks from the system instruction.
-expr = TaskExtraction()
-res  = expr('system instruction') # example instruction: 'Get the weather in New York.'
-res  # str containing the extracted tasks and subtasks
-<<<""": TaskExtraction('Extract all tasks from the user query:'),
+# Using a large language model to build queries, provide instructions, generate content, extract patterns, and more. NOT used for searching facts or information.
+expr = Function('LLM query or instruction') # example query: 'Extract the temperature value from the weather report.'
+res  = expr('data') # example data: 'The temperature in New York is 20 degrees.'
+res  # str containing the query result or generated text i.e. '20 degrees'
+<<<""": Function('Follow the instruction of the task.'),
 """
 >>>[DEFINE CUSTOM EXPRESSION]
-# Define a custom expression using the `Expression` class and a static_context description which can be re-used as an Expression.
+# Define a custom sub-process and code using the `Expression` class and a static_context description which can be re-used as an Expression for repetitive tasks to avoid multiple instructions for the same type of task.
 class MyExpression(Expression): # class name of the custom expression
     def static_context(self):
         return '''Multi-line description of the expression specifying the context of the expression with examples, instructions, desired return format and other information.'''
-<<<""": Sequence(
-    CodeGeneration('Define a custom expression:'),
-    Execute(enclosure=True)
-)}
+<<<""": CodeGeneration()}
 
 
-# TODO:
-META_INSTRUCTIONS = {"""
->>>[STORE DATA]
-# Using the `store` function to store data in memory.
-expr = Store()
-expr('key', 'value') # example key: 'weather report', value: 'The weather in New York is 70 degrees.'
-<<<""": Store(),
-"""
->>>[RECALL DATA]
-# Using the `recall` function to recall data from memory.
-expr = Recall()
-res  = expr('key') # example key: 'weather report'
-res  # str containing the recalled data
-<<<""": Recall()
+class PrepareData(Function):
+    class PrepareDataPreProcessor(PreProcessor):
+        def __call__(self, argument):
+            assert argument.prop.context is not None
+            instruct = argument.prop.prompt
+            context  = argument.prop.context
+            return """{
+    'context': '%s',
+    'instruction': '%s',
+    'result': 'TODO: Replace this with the expected result.'
+}""" % (context, instruct)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.pre_processors  = [self.PrepareDataPreProcessor()]
+        self.constraints     = [DictFormatConstraint({ 'result': '<the data>' })]
+        self.post_processors = [JsonTruncateMarkdownPostProcessor()]
+        self.return_type     = dict # constraint to cast the result to a dict
+
+    @property
+    def static_context(self):
+        return """[CONTEXT]
+Your goal is to prepare the data for the next task instruction. The data should follow the format of the task description based on the given context. Replace the `TODO` section with the expected result of the data preparation. Only provide the 'result' json-key as follows: ```json\n{ 'result': 'TODO:...' }\n```
+
+[GENERAL TEMPLATE]
+```json
+{
+    'context': 'The general context of the task.',
+    'instruction': 'The next instruction of the task for the data preparation.',
+    'result': 'The expected result of the data preparation.'
+}
+```
+
+[EXAMPLE]
+[Instruction]:
+{
+    'context': 'Write a document about the history of AI and include references to the following people: Alan Turing, John McCarthy, Marvin Minsky, and Yoshua Bengio.',
+    'instruction': 'Google the history of AI for Alan Turing',
+    'result': 'TODO'
 }
 
+[Result]:
+```json
+{
+    'result': 'Alan Turing history of AI'
+}
+```
+"""
 
-class Program(Expression):
+
+class LinearScheduler(Expression):
     def __init__(self):
         super().__init__()
-        # Function to extract all sub-tasks from the system instruction.
-        self.task_extraction = TaskExtraction('Extract all tasks from the user query:')
         # Create a choice function to choose the correct function context.
-        self.choice          = Choice(FUNCTIONS.keys())
-        # Execute instruction.
-        self.runner          = Execute(enclosure=True)
+        self.choice = Choice(FUNCTIONS.keys())
 
-    def forward(self, instruct, *args, **kwargs):
-        global TaskList
-        # Extract all tasks from the system instruction.
-        tasks    = self.task_extraction(instruct)
-        TaskList = tasks.split('\n')
-        print(f"Extracted Tasks: {TaskList}")
-        value    = None
+    def forward(self, tasks, memory):
         # Generate the code for each task and subtask.
-        for task in TaskList: # TODO: make a model do the scheduling
-            if task.startswith('>') and '[TASK]' in str(task):
+        context = tasks[0]
+        for task in tasks[1:]: # TODO: make a model do the scheduling
+            if task.startswith('>') and '[TASK]' in task:
                 print(f"Processing Task: {task}")
-            elif task.startswith('>>') and '[SUBTASK]' in str(task):
+            elif task.startswith('>>') and '[SUBTASK]' in task:
+                # Choose the correct function context.
                 option = self.choice(task)
                 option = Symbol(option).similarity(Symbol.symbols(*FUNCTIONS.keys())).argmax()
                 # Run the expression
                 key    = list(FUNCTIONS.keys())[option]
-                value  = FUNCTIONS[key](task)
-        # Return the extracted tasks.
-        return value
+                # Use the memory to store the result of the expression.
+                memory.store(task, key)
+                # Prepare the query for the next task.
+                func   = PrepareData(prompt=task, context=context)
+                data   = func(context) # concat the context with the task
+                # Return the function and task.
+                return task, FUNCTIONS[key], data['result']
+        # If no task is found, return None.
+        return None, None
 
 
-class MetaProgram(Expression):
-    pass # TODO: implement the meta-programming interface
-# TODO: compare linear unrolling of the program with the meta-programming scheduling
+class Evaluate(Expression):
+    def forward(self, task, result, tasks, memory):
+        # Evaluate the result of the program.
+        sim = task.similarity(result)
+        return sim > 0.5 and 'SUCCESS' in memory.join()
+
+
+class Program(Expression):
+    def __init__(self, halt_threshold: float = 0.9,
+                 max_iterations: int = 3,
+                 scheduler = LinearScheduler, *args, **kwargs):
+        super().__init__()
+        # halt threshold
+        self.halt_threshold  = halt_threshold
+        # max iterations
+        self.max_iterations  = max_iterations
+        # buffer memory
+        self.memory          = Memory(iterate_nesy=True)
+        # scheduler
+        self.schedule        = scheduler()
+        # evaluation
+        self.eval            = Evaluate()
+        # Function to extract all sub-tasks from the system instruction.
+        self.task_extraction = TaskExtraction('Extract all tasks from the user query:')
+        # tasks and subtasks
+        self.tasks           = None
+        # target
+        self.target          = None
+
+    def extract(self, instruct):
+        # Extract all tasks from the system instruction.
+        tasks     = self.task_extraction(instruct)
+        task_list = ['>>> Context:' | Symbol(instruct), *tasks.split('\n')]
+        print(f"Extracted Tasks: {task_list}")
+        return task_list
+
+    def forward(self, instruct):
+        # Set the target goal.
+        self.target = Symbol(instruct)
+        # Extract all tasks from the system instruction.
+        self.tasks  = self.extract(instruct)
+        sim         = 0.0
+        n_iter      = 0
+        result      = None
+
+        # Execute the program until the target goal is reached.
+        while sim < self.halt_threshold and n_iter < self.max_iterations:
+            # Schedule the next task.
+            task, func, data = self.schedule(self.tasks, self.memory)
+            # Execute the task.
+            try:
+                result = func(data)
+                self.memory.append(f"EXEC SUCCESS: {task}")
+            except:
+                result = None
+                self.memory.append(f"ERROR: {func.__class__} raised an exception. {task}")
+            # Evaluate the result of the program.
+            success    = self.eval(task, result, self.tasks, self.memory)
+            # update the similarity
+            sim        = Symbol(result).similarity(self.target)
+            # increment the iteration counter
+            n_iter    += 1
+
+        # Return the final result.
+        return result
 
 
 def test_program():
-    expr = Program()
-    res  = expr('Play Taylor Swift on Spotify.')
+    expr   = Program()
+    reader = FileReader()
+    cur_file_dir = os.path.dirname(os.path.abspath(__file__))
+    target = reader(os.path.join(cur_file_dir, 'snippets/richard_feynman_summary.txt'))
+    res    = expr("Write an article about Richard Feynman and who his doctoral students were in Markdown format.")
     print(res)
     return True, {'scores': [1.0]}
 
 
-# def test_meta_program():
-#     expr = MetaProgram()
-#     res  = expr('Play Taylor Swift on Spotify.')
-#     print(res)
-#     return True, {'scores': [1.0]}
+if __name__ == '__main__':
+    prompt  = 'Create a search query for the weather in New York.'
+    context = 'Report on the weather to compare between multiple cities including New York, London, and Paris.'
+    func    = PrepareData(prompt, context=context)
+    res     = func(context)
+    print(res)

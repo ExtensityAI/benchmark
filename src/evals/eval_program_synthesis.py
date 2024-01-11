@@ -37,8 +37,8 @@ No other functions or explanations are required.
     processors = ProcessorPipeline([StripPostProcessor(), CodeExtractPostProcessor()])
     code       = Symbol(processors(str(res), None))
     reader     = FileReader()
-    solution1  = Symbol(reader(os.path.join(cur_file_dir, 'snippets/latex_templating_solution_1.txt')))
-    solution2  = Symbol(reader(os.path.join(cur_file_dir, 'snippets/latex_templating_solution_2.txt')))
+    solution1  = reader(os.path.join(cur_file_dir, 'snippets/latex_templating_solution_1.txt'))
+    solution2  = reader(os.path.join(cur_file_dir, 'snippets/latex_templating_solution_2.txt'))
     base_score = solution1.similarity(solution2)
     rand_score = solution1.similarity(RANDOM_SEQUENCE+rand_task) # remove the chance of simply rephrasing the task
     score      = code.similarity(solution1, normalize=normalize(base_score, rand_score))
