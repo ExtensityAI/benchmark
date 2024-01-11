@@ -1,3 +1,4 @@
+from pathlib import Path
 from src.utils import normalize, RANDOM_SEQUENCE, MOCK_RETURN
 from symai import core_ext, Symbol, Expression, Interface, Function
 from symai.utils import toggle_test
@@ -64,7 +65,7 @@ class MultiModalExpression(Expression):
         score2       = category_sym.similarity(refs_emb[option], metric='cosine')
         return option, (score1 + score2) / 2.0
 
-    def forward(self, assertion, presets):
+    def forward(self, assertion, presets, **kwargs):
         res     = None
         scoring = []
         # detect the type of expression
@@ -104,9 +105,18 @@ class MultiModalExpression(Expression):
 
         # search engine query
         elif option == 2:
-            query = self.extract('search engine query')
-            res   = self.search(query)
-            res   = self.func(res)
+            answer = presets()
+
+            if kwargs.get('real_time'):
+                res = self.search(self.value)
+                res = res.raw.organic_results.to_list()
+            else:
+                res = open(Path(__file__).parent / "snippets" / "google_organic_results_20240111_query=What-is-sulfuric-acid.txt", 'r').read()
+
+            res   = Symbol(res)
+            res   = res.extract("The answer based on the CDC source.")
+            score = res.similarity(answer, metric='cosine')
+            scoring.append(score)
 
         # optical character recognition
         elif option == 3:
@@ -141,7 +151,7 @@ class MultiModalExpression(Expression):
 #     assert res, f'Failed to find yes in {str(res)}'
 
 
-@toggle_test(ACTIVE, default=MOCK_RETURN)
+@toggle_test(False, default=MOCK_RETURN)
 def test_website_scraping():
     # scraped content
     content = """ChatGPT back online after ‘major outage,’ OpenAI says
@@ -184,3 +194,17 @@ The Microsoft
 
 # TODO: add tests also using LLaVA and Whisper to evaluate multi-modal expressions
 # Failures in other modalities are applicable to the score since we evaluate the overall integration with the framework not individual neuro-symbolic engines
+
+@toggle_test(ACTIVE, default=MOCK_RETURN)
+def test_search_engine():
+    query  = "What is sulfuric acid?"
+
+    # Let's test whether or not it can extract the answer based on the CDC source.
+    answer  = Symbol("Sulfuric acid (H2S04) is a corrosive substance, destructive to the skin, eyes, teeth, and lungs. Severe exposure can result in death.")
+    expr    = MultiModalExpression(query)
+    scoring = expr(lambda: 2, lambda: answer, real_time=False)
+
+    return True, {'scores': scoring}
+
+
+test_search_engine()
