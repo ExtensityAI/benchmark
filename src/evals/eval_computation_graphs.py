@@ -89,8 +89,8 @@ Instruction: "Write a document about the history of AI."
 
 
 class CodeGeneration(Function):
-    def __init__(self):
-        super().__init__('Generate the code following the instructions:')
+    def __init__(self, **kwargs):
+        super().__init__('Generate the code following the instructions:', **kwargs)
         self.processors = ProcessorPipeline([StripPostProcessor(), CodeExtractPostProcessor()])
 
     def forward(self, instruct, *args, **kwargs):
@@ -202,8 +202,8 @@ Your goal is to prepare the data for the next task instruction. The data should 
 
 
 class LinearScheduler(Expression):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         # Create a choice function to choose the correct function context.
         self.choice = Choice(FUNCTIONS.keys())
 
@@ -234,14 +234,15 @@ class Evaluate(Expression):
     def forward(self, task, result, tasks, memory):
         # Evaluate the result of the program.
         sim = task.similarity(result)
-        return sim > 0.5 and 'SUCCESS' in memory.join()
+        return sim > 0.5 and 'finished successfully' in memory.join()
 
 
 class Program(Expression):
     def __init__(self, halt_threshold: float = 0.9,
                  max_iterations: int = 3,
-                 scheduler = LinearScheduler, *args, **kwargs):
-        super().__init__()
+                 scheduler = LinearScheduler,
+                 **kwargs):
+        super().__init__(**kwargs)
         # halt threshold
         self.halt_threshold  = halt_threshold
         # max iterations

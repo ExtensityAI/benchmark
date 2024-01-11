@@ -116,8 +116,9 @@ class EvaluateBenchmark(Expression):
                        eval_multimodal_bindings: Optional[List[Callable]] = None,
                        eval_program_synthesis: Optional[List[Callable]] = None,
                        eval_components: Optional[List[Callable]] = None,
-                       eval_computation_graphs: Optional[List[Callable]] = None):
-        super().__init__()
+                       eval_computation_graphs: Optional[List[Callable]] = None,
+                       **kwargs):
+        super().__init__(**kwargs)
         self.eval_in_context_associations = eval_in_context_associations
         self.eval_multimodal_bindings = eval_multimodal_bindings
         self.eval_program_synthesis = eval_program_synthesis
@@ -306,7 +307,7 @@ def run(args):
     )
 
     # Run benchmark
-    benchmark_results = benchmarker(experiments=['gemini'],
+    benchmark_results = benchmarker(experiments=['gpt4'],
                                     n_runs=1,
                                     seeds=[42],
                                     dummy=args.dummy)

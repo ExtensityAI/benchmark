@@ -8,8 +8,8 @@ ACTIVE = True
 
 
 class Category(Expression):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         self.options   = {
             0: 'mathematics related topic',
             1: 'website content scraping and crawling',
@@ -33,8 +33,8 @@ class Category(Expression):
 
 
 class MultiModalExpression(Expression):
-    def __init__(self, val):
-        super().__init__(val)
+    def __init__(self, val, **kwargs):
+        super().__init__(val, **kwargs)
         # define interfaces
         self.solver      = Interface('wolframalpha')
         self.crawler     = Interface('selenium')
