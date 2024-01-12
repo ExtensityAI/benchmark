@@ -201,7 +201,7 @@ Your goal is to prepare the data for the next task instruction. The data should 
 """
 
 
-class LinearScheduler(Expression):
+class SequentialScheduler(Expression):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         # Create a choice function to choose the correct function context.
@@ -231,7 +231,7 @@ class LinearScheduler(Expression):
 
 
 class Evaluate(Expression):
-    def forward(self, task, result, tasks, memory):
+    def forward(self, task, result, memory):
         # Evaluate the result of the program.
         sim = task.similarity(result)
         return sim > 0.5 and 'finished successfully' in memory.join()
@@ -240,7 +240,7 @@ class Evaluate(Expression):
 class Program(Expression):
     def __init__(self, halt_threshold: float = 0.9,
                  max_iterations: int = 3,
-                 scheduler = LinearScheduler,
+                 scheduler = SequentialScheduler,
                  **kwargs):
         super().__init__(**kwargs)
         # halt threshold
@@ -288,7 +288,7 @@ class Program(Expression):
                 result = None
                 self.memory.append(f"ERROR: {func.__class__} raised an exception. {task}")
             # Evaluate the result of the program.
-            success    = self.eval(task, result, self.tasks, self.memory)
+            success    = self.eval(task, result, self.memory)
             # update the similarity
             sim        = Symbol(result).similarity(self.target)
             # increment the iteration counter
