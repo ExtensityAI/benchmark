@@ -4,35 +4,11 @@ from symai import Symbol, Expression, Function
 from symai.utils import toggle_test
 from symai.post_processors import StripPostProcessor, CodeExtractPostProcessor
 
+from src.evals.components import Factorization
 from src.utils import normalize, RANDOM_SEQUENCE, MOCK_RETURN, success_score
 
 
 ACTIVE = False
-
-
-FACTORIZATION_CONTEXT = """[Context]
-Compute the factorization of expression, ``f``, into irreducibles. (To
-factor an integer into primes, use ``factorint``.)
-
-There two modes implemented: symbolic and formal. If ``f`` is not an
-instance of :class:`Poly` and generators are not specified, then the
-former mode is used. Otherwise, the formal mode is used.
-
-In symbolic mode, :func:`factor` will traverse the expression tree and
-factor its components without any prior expansion, unless an instance
-of :class:`~.Add` is encountered (in this case formal factorization is
-used). This way :func:`factor` can handle large or symbolic exponents.
-
-By default, the factorization is computed over the rationals. To factor
-over other domain, e.g. an algebraic or finite field, use appropriate
-options: ``extension``, ``modulus`` or ``domain``.
-"""
-
-
-class Factorization(Function):
-    @property
-    def static_context(self):
-        return FACTORIZATION_CONTEXT
 
 
 LOGIC_FACTORIZATION_CONTEXT = """[Context]
@@ -99,6 +75,10 @@ class LogicFactorization(Function):
 def test_factorize_formula():
     a, b, c, d, x, y = sym.symbols('a, b, c, d, x, y')
     expr        = a * x + b * x - c * x - a * y - b * y + c * y + d
+    stmt        = Symbol("Can you simplify me the following expression: a*x + b*x - c*x - a*y - b*y + c*y + d")
+    res         = stmt.extract('formula')
+    #res goes to sympy
+    symbols_    = stmt.extract('all unique symbols as a list')
     fact        = sym.collect(expr, d, func=sym.factor)
     # model based factorization
     func        = Factorization('Factorize d from the expression such that your final start with: `d + (...`:')
@@ -110,22 +90,8 @@ def test_factorize_formula():
                                   Symbol("We obtain: d + ( x - y ) * ( a + b - c )"),
                                   Symbol("(a + b - c) * (x - y) + d")]).mean()
     # validate
-    # (score - rand) / (baseline - rand) =
-    # score / (baseline - rand) - (rand / (baseline - rand)) =
-    # score * z, z = 1 / (baseline - rand) - (rand / (baseline - rand)) =
-    # score * ((1 - rand) / (baseline - rand))
     score       = ref.similarity(res, normalize=normalize(base_score, rand_score))
-
     return True, {'scores': [score]}
-
-
-@toggle_test(ACTIVE, default=MOCK_RETURN)
-def test_linear_function_composition():
-    val  = "A line parallel to y = 4x + 6 passes through a point P=(x1=5, y1=10). What is the y-coordinate of the point where this line crosses the y-axis?"
-    expr = Factorization('Rewrite the equation in the form y = mx + b and solve the problem.')
-    res  = expr(val)
-    assert '-10' in str(res), f'Failed to find 6 in {str(res)}'
-    return True, success_score
 
 
 #@toggle_test(ACTIVE, default=MOCK_RETURN)
@@ -187,4 +153,31 @@ ParentOf(x, y) <- IS(x, parent) AND IS(y, child);
 # TODO: Write experiment of Personas as function f(x_t, s1_0) and g(y_t, s2_0) where t is time, x is input of agent 1, y is input of agent 2, s1_0 and s2_0 are the starting states of the agents, and f and g are the functions that map the input to the output.
 
 
-
+#def test_solving_puzzle_using():
+    # o,y,p,b,g
+# from sympy import *
+# ow,oh,yw,yh,pw,ph,bw,bh,gw,gh = symbols('o_w o_h y_w y_h p_w p_h b_w b_h g_w g_h')
+# u1 = ow+bw
+# u2 = yw+pw+bw
+# u3 = oh+yh
+# u4 = bh
+# u5 = oh+gh+ph
+# u6 = yw+gw+bw
+# P = [ow*oh,yw*yh,pw*ph,bw*bh,gw*gh]
+# U=[u1,u2,u3,u4,u5,u6]
+# l=len(U)
+# E=[]
+# E.append(Eq(oh,3))
+# for i in range(l):
+#     for j in range(i):
+#         e = U[i]-U[j]
+#         E.append(Eq(e,0))
+# l=len(P)
+# for i in range(l):
+#     for j in range(i):
+#         e = P[i]-P[j]
+#         E.append(Eq(e,0))
+# S = solve(E)
+# print(S)
+# L = 3 + S[0][yh]
+# print("L=",L)

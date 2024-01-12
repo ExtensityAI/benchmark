@@ -1,3 +1,5 @@
+import sympy as sym
+
 from pathlib import Path
 from src.utils import normalize, RANDOM_SEQUENCE, MOCK_RETURN
 from symai import core_ext, Symbol, Expression, Interface, Function
@@ -144,11 +146,40 @@ class MultiModalExpression(Expression):
         return scoring
 
 
-# def test_comparison():
-#     val = "is 1000 bigger than 1063.472?"
-#     expr = MultiModalExpression(val)
-#     res = expr()
-#     assert res, f'Failed to find yes in {str(res)}'
+@toggle_test(ACTIVE, default=MOCK_RETURN)
+def test_comparison():
+    val = "is 1000 bigger than 1063.472?"
+    expr = MultiModalExpression(val)
+    res = expr()
+    assert res, f'Failed to find yes in {str(res)}'
+
+
+@toggle_test(ACTIVE, default=MOCK_RETURN)
+def test_factorize_formula():
+    a, b, c, d, x, y = sym.symbols('a, b, c, d, x, y')
+    expr        = a * x + b * x - c * x - a * y - b * y + c * y + d
+    stmt        = Symbol("Can you simplify me the following expression: a*x + b*x - c*x - a*y - b*y + c*y + d")
+    res         = stmt.extract('formula')
+    #res goes to sympy
+    symbols_    = stmt.extract('all unique symbols as a list')
+    fact        = sym.collect(expr, d, func=sym.factor)
+    # model based factorization
+    ref         = Symbol(fact)
+    random      = Symbol(RANDOM_SEQUENCE)
+    rand_score  = ref.similarity(random)
+    base_score  = ref.similarity([Symbol("The factorized result is: d+(a+b-c)*(x-y)"),
+                                  Symbol("We obtain: d + ( x - y ) * ( a + b - c )"),
+                                  Symbol("(a + b - c) * (x - y) + d")]).mean()
+    # validate
+    score       = ref.similarity(res, normalize=normalize(base_score, rand_score))
+    return True, {'scores': [score]}
+
+
+@toggle_test(ACTIVE, default=MOCK_RETURN)
+def test_linear_function_composition():
+    val  = "A line parallel to y = 4x + 6 passes through a point P=(x1=5, y1=10). What is the y-coordinate of the point where this line crosses the y-axis?"
+    assert '-10' in str(res), f'Failed to find 6 in {str(res)}'
+    return True, success_score
 
 
 @toggle_test(False, default=MOCK_RETURN)

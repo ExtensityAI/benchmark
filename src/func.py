@@ -1,6 +1,7 @@
 import backoff
 import inspect
 import json
+import os
 import numpy as np
 
 from tqdm import tqdm
@@ -191,7 +192,7 @@ class EvaluateBenchmark(Expression):
         experiment_cnt    = 0
         # set tqdm progress bar
         progress = tqdm(total=total_experiments, desc=f'Running {type} benchmark')
-        for _, test_func in evals:
+        for fun_name, test_func in evals:
             for seed in seeds:
                 # Run the test function
                 for r in range(n_runs):
@@ -209,7 +210,7 @@ class EvaluateBenchmark(Expression):
                             try:
                                 res, info = test_func(*args, **kwargs)
                             except Exception as e:
-                                print('EVAL ERROR:', e) # Ignore exceptions and count as a failure
+                                print('EVAL ERROR:', fun_name, e) # Ignore exceptions and count as a failure
                                 return False, 0.0, 0.0
                             finally:
                                 sleep(0.05) # Sleep for 50ms for min. API cooldown
@@ -217,10 +218,9 @@ class EvaluateBenchmark(Expression):
                             elapsed_time = end_time - start_time
                             entry = {
                                 'run': r,
-                                'test': test_func.__name__,
+                                'test': fun_name,
                                 'seed': seed,
                                 'time': elapsed_time,
-                                'info': info,
                                 'success': res,
                                 'scores': info['scores']
                             }
@@ -250,6 +250,13 @@ class EvaluateBenchmark(Expression):
                 'seeds': seeds,
                 'runs': results[experiment][type]['run_list']
             }
+
+        # partial save of current state of results to disk
+        os.makedirs('results', exist_ok=True)
+        # get only the current type results
+        type_results = {experiment: results[experiment][type] for experiment in results}
+        with open(f'results/{type}_results.json', 'w') as f:
+            json.dump(type_results, f, indent=2)
 
     def forward(self, experiments=['gpt4', 'llama', 'gpt3.5', 'zephyr', 'gemini', 'mistral'], n_runs=3, seeds=[42, 77, 97], dummy=False):
         # This dictionary will now hold the scoring for each test type
@@ -285,6 +292,11 @@ class EvaluateBenchmark(Expression):
         # Evaluate computation graphs
         if self.eval_computation_graphs:
             self.evaluate_experiment(experiments, self.eval_computation_graphs, n_runs, seeds, config, results, type='eval_computation_graphs')
+
+        # save the results file to disk
+        os.makedirs('results', exist_ok=True)
+        with open(f'results/total_results.json', 'w') as f:
+            json.dump(results, f, indent=2)
 
         return results
 
