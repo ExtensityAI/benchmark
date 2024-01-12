@@ -71,6 +71,9 @@ Your goal is to extract the tasks and subtasks from the system instruction as a 
 Each task and subtask should be represented as in a functional block as shown in the example below.
 Try to define the task and subtask description in one sentence.
 
+[Capabilities]
+%s
+
 [Example]
 Instruction: "Write a document about the history of AI."
 
@@ -85,7 +88,7 @@ Instruction: "Write a document about the history of AI."
 >>3.2.[SUBTASK]: Use the LLM to generate the rest of the document.
 >>3.3.[SUBTASK]: Use the LLM to generate a shell command that saves the document text to the file.
 >>3.4.[SUBTASK]: Execute the command in the terminal.
-"""
+""" % '\n'.join([k for k in FUNCTIONS.keys()])
 
 
 class CodeGeneration(Function):
@@ -206,39 +209,49 @@ class SequentialScheduler(Expression):
         super().__init__(**kwargs)
         # Create a choice function to choose the correct function context.
         self.choice = Choice(FUNCTIONS.keys())
+        # index of the current task
+        self.index  = 1
 
     def forward(self, tasks, memory):
         # Generate the code for each task and subtask.
         context = tasks[0]
-        for task in tasks[1:]: # TODO: make a model do the scheduling
-            if task.startswith('>') and '[TASK]' in task:
-                print(f"Processing Task: {task}")
-            elif task.startswith('>>') and '[SUBTASK]' in task:
-                # Choose the correct function context.
-                option = self.choice(task)
-                option = Symbol(option).similarity(Symbol.symbols(*FUNCTIONS.keys())).argmax()
-                # Run the expression
-                key    = list(FUNCTIONS.keys())[option]
-                # Use the memory to store the result of the expression.
-                memory.store(task, key)
-                # Prepare the query for the next task.
-                func   = PrepareData(prompt=task, context=context)
-                data   = func(context) # concat the context with the task
-                # Return the function and task.
-                return task, FUNCTIONS[key], data['result']
-        # If no task is found, return None.
-        return None, None
+        task = tasks[self.index] # TODO: make a model do the scheduling
+        while task.startswith('>') and '[TASK]' in task:
+            print(f"Processing Task: {task}")
+            self.index += 1
+            task = tasks[self.index]
+        # If the task is a subtask, choose the correct function context.
+        if task.startswith('>>') and '[SUBTASK]' in task:
+            # Choose the correct function context.
+            option = self.choice(task)
+            option = Symbol(option).similarity(Symbol.symbols(*FUNCTIONS.keys())).argmax()
+            # Run the expression
+            key    = list(FUNCTIONS.keys())[option]
+            # Use the memory to store the result of the expression.
+            memory.store(task, key)
+            # Prepare the query for the next task.
+            func   = PrepareData(prompt=task, context=context)
+            data   = func(context) # concat the context with the task
+            # increment the task index
+            self.index += 1
+            # Return the function and task.
+            return task, FUNCTIONS[key], data['result']
+
+        self.index += 1
+        return None, None, None
 
 
 class Evaluate(Expression):
     def forward(self, task, result, memory):
         # Evaluate the result of the program.
-        sim = task.similarity(result)
-        return sim > 0.5 and 'finished successfully' in memory.join()
+        sim     = task.similarity(result)
+        success = sim > 0.5 and 'finished successfully' in memory.join()
+        memory.append(f"EVAL: {task} | Similarity: {sim} | Success: {success}")
+        # TODO: ...
 
 
 class Program(Expression):
-    def __init__(self, halt_threshold: float = 0.9,
+    def __init__(self, halt_threshold: float = 0.85,
                  max_iterations: int = 3,
                  scheduler = SequentialScheduler,
                  **kwargs):
@@ -263,7 +276,9 @@ class Program(Expression):
     def extract(self, instruct):
         # Extract all tasks from the system instruction.
         tasks     = self.task_extraction(instruct)
-        task_list = ['>>> Context:' | Symbol(instruct), *tasks.split('\n')]
+        tasks     = tasks.split('\n')
+        tasks     = [t for t in tasks if t.strip() != '']
+        task_list = ['>>> Context:' | Symbol(instruct), *tasks]
         print(f"Extracted Tasks: {task_list}")
         return task_list
 
@@ -288,7 +303,7 @@ class Program(Expression):
                 result = None
                 self.memory.append(f"ERROR: {func.__class__} raised an exception. {task}")
             # Evaluate the result of the program.
-            success    = self.eval(task, result, self.memory)
+            self.eval(task, result, self.memory)
             # update the similarity
             sim        = Symbol(result).similarity(self.target)
             # increment the iteration counter
