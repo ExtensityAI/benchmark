@@ -1,0 +1,34 @@
+def run(text: str) -> str:  # [MANAGED] entry point cannot be changed
+    # [MANAGED-BEGIN] mandatory imports here
+    import traceback
+    import requests
+    from symai import Function
+    # [MANAGED-END] mandatory imports here
+
+    # executable code here
+    try:  # [MANAGED] must contain this line, do not change
+        # API call to fetch data from URL
+        response = requests.get('https://www.ykilcher.com/')
+
+        # Check if the request was successful
+        if response.status_code == 200:
+            res = response.text  # Get the content of the response
+        else:
+            res = f"Error: {response.status_code}"
+
+        # mandatory return statement here
+        res = str(res)  # [MANAGED] must contain this line, do not change
+
+        # Use the Function class to log messages
+        func = Function('Extract full name from text')
+        res = func(res)
+
+        return res  # [MANAGED] must return a string, do not change
+    except Exception as e:  # [MANAGED] must catch all exceptions and return them as string
+        tb = traceback.format_exc()  # [MANAGED] return full error stack trace as string
+        return tb  # [MANAGED] return tb as string, do not change
+
+# Example request value
+value = "Fetch data from URL https://www.ykilcher.com/"
+# mandatory statement here
+res = run(value)  # [MANAGED] must contain this line, do not change

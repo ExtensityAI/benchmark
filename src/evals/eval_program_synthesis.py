@@ -2,11 +2,12 @@ import os
 
 from src.utils import normalize, rand_ast_similarity, ast_similarity, RANDOM_SEQUENCE, MOCK_RETURN
 
-from symai import Symbol, Conversation
+from symai import Symbol, Expression, Conversation
 from symai.components import FileReader, Execute
 from symai.processor import ProcessorPipeline
 from symai.post_processors import StripPostProcessor, CodeExtractPostProcessor
 from symai.utils import toggle_test
+from symai.extended.api_builder import APIBuilder, StackTraceRetryExecutor
 
 
 ACTIVE = True
@@ -72,4 +73,44 @@ No other functions or explanations are required.
     return success, {'scores': scoring}
 
 
-# TODO: add the APIBuilder test that generates code to call data from a website
+class APIExecutor(Expression):
+    def __init__(self, verbose=False, **kwargs):
+        super().__init__(**kwargs)
+        self.builder   = APIBuilder()
+        self.executor  = StackTraceRetryExecutor(retries=0) # disable retries
+        self._verbose  = verbose
+        self._request  = None
+        self._code     = None
+        self._result   = None
+        self._code_sim = None
+
+    @property
+    def _runnable(self):
+        return self.executor._runnable
+
+    def forward(self, request: Symbol, presets, **kwargs) -> Symbol:
+        ref, code     = presets()
+        self._request = self._to_symbol(request)
+        if self._verbose: print('[REQUEST]', self._request)
+        # Generate the code to implement the API call
+        self._code    = self.builder(self._request)
+        if self._verbose: print('[GENERATED_CODE]', self._code)
+        code_sim      = Symbol(self._code).similarity(code)
+        # Execute the code to define the 'run' function
+        self._result  = self.executor(self._code, request=self._request)
+        if self._verbose: print('[RESULT]:', self._result)
+        web_sim       = Symbol(self._result).similarity(ref)
+        self._value   = self._result
+        return [code_sim, web_sim]
+
+
+@toggle_test(ACTIVE, default=MOCK_RETURN)
+def test_api_builder():
+    ref      = "Yannic Kilcher"
+    reader   = FileReader()
+    website  = reader(os.path.join(cur_file_dir, 'snippets/code_api_builder_website_result.txt'))
+    ref_code = reader(os.path.join(cur_file_dir, 'snippets/code_api_builder.txt'))
+    source   = APIExecutor() # creates code on the fly and executes it
+    scores   = source('Fetch data from URL https://www.ykilcher.com/ and use Function to extract the full name of the author.', # the request
+                      lambda: (ref, ref_code)) # interprets the instruction to generate a HTTP request
+    return True, {'scores': scores}
