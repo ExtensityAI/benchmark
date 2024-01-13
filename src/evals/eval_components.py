@@ -5,7 +5,7 @@ from symai.utils import toggle_test
 from symai.post_processors import StripPostProcessor, CodeExtractPostProcessor
 
 from src.evals.components import Factorization
-from src.utils import normalize, RANDOM_SEQUENCE, MOCK_RETURN, success_score
+from src.utils import normalize, RANDOM_SEQUENCE, MOCK_RETURN
 
 
 ACTIVE = False

@@ -1,12 +1,12 @@
 import sympy as sym
 
 from pathlib import Path
-from src.utils import normalize, RANDOM_SEQUENCE, MOCK_RETURN
+from src.utils import normalize, RANDOM_SEQUENCE, MOCK_RETURN, success_score
 from symai import core_ext, Symbol, Expression, Interface, Function
 from symai.utils import toggle_test
 
 
-ACTIVE = True
+ACTIVE = False
 
 
 class Category(Expression):
@@ -32,6 +32,10 @@ class Category(Expression):
             emb = map(_emb_mapping_, self.options.values())
             return list(emb)
         return _embed(self)
+
+
+LINEAR_FUNCTION = 'linear function'
+NUMBER_COMPARISON = 'number comparison'
 
 
 class MultiModalExpression(Expression):
@@ -76,19 +80,38 @@ class MultiModalExpression(Expression):
 
         # mathematical formula
         if option == 0:
-            formula = self.extract('mathematical formula')
+            ref_formula, instance_type, details  = presets()
+            formula  = self.extract('mathematical formula')
+            score    = ref_formula.similarity(formula, metric='cosine')
+            scoring.append(score)
             # subtypes of mathematical formula
-            if formula.isinstanceof('linear function'):
-                res      = presets()
+            if formula.isinstanceof(LINEAR_FUNCTION):
+                if instance_type == LINEAR_FUNCTION:
+                    scoring.append(1.0)
+                else:
+                    scoring.append(0.0)
+                answer   = details
                 # prepare for wolframalpha
                 question = self.extract('question sentence')
                 req      = question.extract('what is requested?')
                 x        = self.extract('coordinate point (.,.)') # get coordinate point / could also ask for other points
                 query    = formula | f', point x = {x}' | f', solve {req}' # concatenate to the question and formula
                 res      = self.solver(query)
+                score    = answer.similarity(res, metric='cosine')
+                scoring.append(score)
 
-            elif formula.isinstanceof('number comparison'):
+            elif formula.isinstanceof(NUMBER_COMPARISON):
+                if instance_type == NUMBER_COMPARISON:
+                    scoring.append(1.0)
+                else:
+                    scoring.append(0.0)
+                answer   = details
                 res      = self.solver(formula) # send directly to wolframalpha
+                if res == answer:
+                    scoring.append(1.0)
+                else:
+                    scoring.append(0.0)
+                scoring.append(score)
 
             else:
                 raise Exception('Unknown formula type')
@@ -147,14 +170,6 @@ class MultiModalExpression(Expression):
 
 
 @toggle_test(ACTIVE, default=MOCK_RETURN)
-def test_comparison():
-    val = "is 1000 bigger than 1063.472?"
-    expr = MultiModalExpression(val)
-    res = expr()
-    assert res, f'Failed to find yes in {str(res)}'
-
-
-@toggle_test(ACTIVE, default=MOCK_RETURN)
 def test_factorize_formula():
     a, b, c, d, x, y = sym.symbols('a, b, c, d, x, y')
     expr        = a * x + b * x - c * x - a * y - b * y + c * y + d
@@ -173,13 +188,6 @@ def test_factorize_formula():
     # validate
     score       = ref.similarity(res, normalize=normalize(base_score, rand_score))
     return True, {'scores': [score]}
-
-
-@toggle_test(ACTIVE, default=MOCK_RETURN)
-def test_linear_function_composition():
-    val  = "A line parallel to y = 4x + 6 passes through a point P=(x1=5, y1=10). What is the y-coordinate of the point where this line crosses the y-axis?"
-    assert '-10' in str(res), f'Failed to find 6 in {str(res)}'
-    return True, success_score
 
 
 @toggle_test(False, default=MOCK_RETURN)
@@ -238,4 +246,19 @@ def test_search_engine():
     return True, {'scores': scoring}
 
 
-test_search_engine()
+@toggle_test(True, default=MOCK_RETURN)
+def test_linear_function_computation():
+    query   = Symbol('What is the y-coordinate of the point where this line crosses the y-axis?')
+    val     = Symbol("A line parallel to y = 4x + 6 passes through a point P=(x1=5, y1=10).")
+    expr    = MultiModalExpression(query)
+    scoring = expr(lambda: 0, lambda: (Symbol('y = 4x + 6, P=(x1=5, y1=10), solve y-coordinate'), Symbol(LINEAR_FUNCTION), val))
+
+    return True, {'scores': scoring}
+
+
+@toggle_test(True, default=MOCK_RETURN)
+def test_comparison():
+    val  = Symbol("is 100044347 bigger than 129981063.472?")
+    expr = MultiModalExpression(val)
+    res  = expr(lambda: 0, lambda: (Symbol('100044347 > 129981063.472'), Symbol(NUMBER_COMPARISON), False))
+    assert res, f'Failed to find yes in {str(res)}'
