@@ -6,7 +6,7 @@ from symai import core_ext, Symbol, Expression, Interface, Function
 from symai.utils import toggle_test
 
 
-ACTIVE = False
+ACTIVE = True
 
 
 class Category(Expression):
@@ -193,7 +193,7 @@ def test_factorize_formula():
     return True, {'scores': [score]}
 
 
-@toggle_test(False, default=MOCK_RETURN)
+@toggle_test(ACTIVE, default=MOCK_RETURN)
 def test_website_scraping():
     # scraped content
     content = """ChatGPT back online after ‘major outage,’ OpenAI says
@@ -246,7 +246,7 @@ def test_search_engine():
     return True, {'scores': scoring}
 
 
-@toggle_test(True, default=MOCK_RETURN)
+@toggle_test(ACTIVE, default=MOCK_RETURN)
 def test_linear_function_computation():
     query   = Symbol('What is the y-coordinate of the point where this line crosses the y-axis?')
     val     = Symbol("A line parallel to y = 4x + 6 passes through a point P=(x1=5, y1=10).")

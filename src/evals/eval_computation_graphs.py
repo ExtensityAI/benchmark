@@ -2,8 +2,10 @@ import os
 
 from datetime import datetime
 from ast import List
+from src.utils import MOCK_RETURN
 
 from symai import Symbol, Expression, Function, Interface
+from symai.utils import toggle_test
 from symai.components import Choice, Execute, Sequence, FileReader
 from symai.processor import ProcessorPipeline
 from symai.constraints import DictFormatConstraint
@@ -11,6 +13,7 @@ from symai.post_processors import StripPostProcessor, CodeExtractPostProcessor, 
 from symai.pre_processors import PreProcessor
 
 
+ACTIVE = True
 DataDictionary = Symbol({})
 
 
@@ -313,6 +316,7 @@ class Program(Expression):
         return result
 
 
+@toggle_test(ACTIVE, default=MOCK_RETURN)
 def test_program():
     expr   = Program()
     reader = FileReader()
