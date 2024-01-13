@@ -4,7 +4,7 @@ from symai import core_ext, Symbol, Expression, Interface, Function
 from symai.utils import toggle_test
 
 
-ACTIVE = True
+ACTIVE = False
 
 
 class Category(Expression):
@@ -51,19 +51,12 @@ class MultiModalExpression(Expression):
 
     def detect_option(self, assertion):
         option       = assertion()
-        refs_emb     = self.category()
-        score1       = float(self.isinstanceof(self.category.options[option]))
+
         # testing the category detection accuracy
-        category     = self.choice(self.category.options.values(), default='unknown')
-        category_sym = Symbol(category)
-        # TODO: continue from embeddings refactoring
-        # TODO: idea for the future
-        # category_sym = Symbol(category).to_tensor(interface='ExtensityAI/embeddings')
-        # category_sym.value # the same as category
-        # category_emb.data  # vector representation of the category
-        # use this data tensor for similarity
-        score2       = category_sym.similarity(refs_emb[option], metric='cosine')
-        return option, (score1 + score2) / 2.0
+        category = self.choice(self.category.options.values(), default='unknown')
+        score    = category.similarity(self.category.options[option])
+
+        return option, score
 
     def forward(self, assertion, presets, **kwargs):
         res     = None
@@ -111,7 +104,8 @@ class MultiModalExpression(Expression):
                 res = self.search(self.value)
                 res = res.raw.organic_results.to_list()
             else:
-                res = open(Path(__file__).parent / "snippets" / "google_organic_results_20240111_query=What-is-sulfuric-acid.txt", 'r').read()
+                snippet_path = Path(__file__).parent / "snippets" / "google_organic_results_20240111_query=What-is-sulfuric-acid.txt"
+                res = open(snippet_path, "r").read()
 
             res   = Symbol(res)
             res   = res.extract("The answer based on the CDC source.")
@@ -120,23 +114,32 @@ class MultiModalExpression(Expression):
 
         # optical character recognition
         elif option == 3:
-            query = self.extract('image url')
-            res   = self.ocr(query)
+            answer = presets()
+            if kwargs.get('real_time'):
+                res = self.ocr((Path(__file__).parent / "assets" / "sample_bill.jpg").as_posix())
+            else:
+                snippet_path = Path(__file__).parent / "snippets" / "sample_bill.txt"
+                res = open(snippet_path, "r").read()
+                res = Symbol(res)
+
+            res = res.extract(self.value)
+            score = res.similarity(answer, metric='cosine')
+            scoring.append(score)
 
         # image rendering
-        elif option == 4:
-            query = self.extract('image url')
-            res   = self.rendering(query)
+        # elif option == 4:
+        #     query = self.extract('image url')
+        #     res   = self.rendering(query)
 
         # image captioning
-        elif option == 5:
-            image = self.extract('image path')
-            res   = self.captioning(image)
+        # elif option == 5:
+        #     image = self.extract('image path')
+        #     res   = self.captioning(image)
 
         # audio transcription
-        elif option == 6:
-            audio = self.extract('audio path')
-            res   = self.transcribe(audio)
+        # elif option == 6:
+        #     audio = self.extract('audio path')
+        #     res   = self.transcribe(audio)
 
         else:
             raise Exception('Unknown expression type')
@@ -144,14 +147,7 @@ class MultiModalExpression(Expression):
         return scoring
 
 
-# def test_comparison():
-#     val = "is 1000 bigger than 1063.472?"
-#     expr = MultiModalExpression(val)
-#     res = expr()
-#     assert res, f'Failed to find yes in {str(res)}'
-
-
-@toggle_test(False, default=MOCK_RETURN)
+@toggle_test(ACTIVE, default=MOCK_RETURN)
 def test_website_scraping():
     # scraped content
     content = """ChatGPT back online after ‘major outage,’ OpenAI says
@@ -192,9 +188,6 @@ The Microsoft
     return True, {'scores': scoring}
 
 
-# TODO: add tests also using LLaVA and Whisper to evaluate multi-modal expressions
-# Failures in other modalities are applicable to the score since we evaluate the overall integration with the framework not individual neuro-symbolic engines
-
 @toggle_test(ACTIVE, default=MOCK_RETURN)
 def test_search_engine():
     query  = "What is sulfuric acid?"
@@ -207,4 +200,14 @@ def test_search_engine():
     return True, {'scores': scoring}
 
 
-test_search_engine()
+@toggle_test(True, default=MOCK_RETURN)
+def test_ocr_engine():
+    query   = "Extract the current balance from the bill."
+
+    answer = Symbol("$ 21,920.37")
+    expr   = MultiModalExpression(query)
+    scoring = expr(lambda: 3, lambda: answer, real_time=False)
+
+    return True, {'scores': scoring}
+
+test_ocr_engine()
