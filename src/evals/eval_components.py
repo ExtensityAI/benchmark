@@ -100,7 +100,8 @@ def test_factorize_formula():
 
 
 @toggle_test(ACTIVE, default=MOCK_RETURN)
-def test_logic_rewriting_capability():
+def test_dsl_writing_capability():
+    # test only the capability to follow instructions from a custom DSL (syntax) + semantic structure
     solution1 = """
 // Query
 IsBrotherOf(jay, john, bob) <- BrotherOf(jay, john) AND FatherOf(bob, jay) AND FatherOf(bob, john);

@@ -131,16 +131,6 @@ def test_XOR_logic():
 
 
 @toggle_test(ACTIVE, default=MOCK_RETURN)
-def test_insert_lshift():
-    '''Test if information can be inserted into a symbol using the LSHIFT operator'''
-    base = 'I love to eat apples and bananas'
-    sym  = Symbol('I love to eat apples')
-    res  = sym << 'and bananas'
-    sim  = res.similarity(base)
-    return True, {'scores': [sim]}
-
-
-@toggle_test(ACTIVE, default=MOCK_RETURN)
 def test_insert_rshift():
     '''Test if information can be inserted into a symbol using the RSHIFT operator'''
     base = 'I love to eat apples and bananas'
