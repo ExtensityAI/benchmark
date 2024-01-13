@@ -6,3 +6,4 @@ anthropic
 wandb
 parso
 sympy
+z3-solver

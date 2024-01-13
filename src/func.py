@@ -210,7 +210,7 @@ class EvaluateBenchmark(Expression):
                             try:
                                 res, info = test_func(*args, **kwargs)
                             except Exception as e:
-                                print('EVAL ERROR:', fun_name, e) # Ignore exceptions and count as a failure
+                                print('EVAL FAILURE:', fun_name, e) # Ignore exceptions and count as a failure
                                 return False, 0.0, 0.0
                             finally:
                                 sleep(0.05) # Sleep for 50ms for min. API cooldown
@@ -319,9 +319,10 @@ def run(args):
     )
 
     # Run benchmark
-    benchmark_results = benchmarker(experiments=['gpt4'],
-                                    n_runs=1,
-                                    seeds=[42],
+    #benchmark_results = benchmarker(experiments=['gpt4', 'llama', 'gpt3.5', 'zephyr', 'gemini', 'mistral'],
+    benchmark_results = benchmarker(experiments=['llama', 'zephyr', 'mistral'],
+                                    n_runs=3,
+                                    seeds=[42, 18, 97],
                                     dummy=args.dummy)
 
     # Print benchmark results

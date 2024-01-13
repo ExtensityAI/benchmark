@@ -6,7 +6,7 @@ from symai import core_ext, Symbol, Expression, Interface, Function
 from symai.utils import toggle_test
 
 
-ACTIVE = False
+ACTIVE = True
 
 
 class Category(Expression):

@@ -1,14 +1,19 @@
+import os
 import sympy as sym
 
-from symai import Symbol, Expression, Function
+from symai.processor import ProcessorPipeline
+from symai import Symbol, Expression, Function, Conversation
+from symai.components import FileReader
 from symai.utils import toggle_test
 from symai.post_processors import StripPostProcessor, CodeExtractPostProcessor
 
 from src.evals.components import Factorization
+from src.evals.components.sat_solver import LOGIC_TEMPLATE, SATSolver
 from src.utils import normalize, RANDOM_SEQUENCE, MOCK_RETURN
 
 
-ACTIVE = False
+ACTIVE = True
+cur_file_dir = os.path.dirname(os.path.abspath(__file__))
 
 
 LOGIC_FACTORIZATION_CONTEXT = """[Context]
@@ -94,8 +99,8 @@ def test_factorize_formula():
     return True, {'scores': [score]}
 
 
-#@toggle_test(ACTIVE, default=MOCK_RETURN)
-def test_causal_expression():
+@toggle_test(ACTIVE, default=MOCK_RETURN)
+def test_logic_rewriting_capability():
     solution1 = """
 // Query
 IsBrotherOf(jay, john, bob) <- BrotherOf(jay, john) AND FatherOf(bob, jay) AND FatherOf(bob, john);
@@ -114,7 +119,6 @@ brother: "a male sibling";
 parent: "a person's father or mother";
 child: "a young human being below the legal age of majority associated to this person as a parent";
 """
-
 
     solution2 = """
 IsBrotherOf(x, y, z) <- BrotherOf(x, y) AND FatherOf(z, x) AND FatherOf(z, y);
@@ -150,34 +154,52 @@ ParentOf(x, y) <- IS(x, parent) AND IS(y, child);
         scoring.append(1.0)
         return True, {'scores': scoring}
 
-# TODO: Write experiment of Personas as function f(x_t, s1_0) and g(y_t, s2_0) where t is time, x is input of agent 1, y is input of agent 2, s1_0 and s2_0 are the starting states of the agents, and f and g are the functions that map the input to the output.
 
+def test_solve_puzzle():
+    problem   = """
+The Englishman lives in the red house.
+The Swede keeps dogs.
+The Dane drinks tea.
+The green house is just to the left of the white one.
+The owner of the green house drinks coffee.
+The Pall Mall smoker keeps birds.
+The owner of the yellow house smokes Dunhills.
+The man in the center house drinks milk.
+The Norwegian lives in the first house.
+The Blend smoker has a neighbor who keeps cats.
+The man who smokes Blue Masters drinks bier.
+The man who keeps horses lives next to the Dunhill smoker.
+The German smokes Prince.
+The Norwegian lives next to the blue house.
+The Blend smoker has a neighbor who drinks water.
+The question to be answered is: Who keeps fish?
+"""
+    task      = """[Task]
+Implement the `problem_statement` function that takes in the z3 package `S` solver as input and returns a query constant as output.
+All required imports are already provided. The code of the `problem_statement` function should be written between a
+```python
+...
+```
+code block.
+The `problem_statement` function must be self-contained, fully functional and pass all tests.
+No other functions or explanations are required.
+The implementation must be a SAT solvable solution and follow the user problem requirements:
 
-#def test_solving_puzzle_using():
-    # o,y,p,b,g
-# from sympy import *
-# ow,oh,yw,yh,pw,ph,bw,bh,gw,gh = symbols('o_w o_h y_w y_h p_w p_h b_w b_h g_w g_h')
-# u1 = ow+bw
-# u2 = yw+pw+bw
-# u3 = oh+yh
-# u4 = bh
-# u5 = oh+gh+ph
-# u6 = yw+gw+bw
-# P = [ow*oh,yw*yh,pw*ph,bw*bh,gw*gh]
-# U=[u1,u2,u3,u4,u5,u6]
-# l=len(U)
-# E=[]
-# E.append(Eq(oh,3))
-# for i in range(l):
-#     for j in range(i):
-#         e = U[i]-U[j]
-#         E.append(Eq(e,0))
-# l=len(P)
-# for i in range(l):
-#     for j in range(i):
-#         e = P[i]-P[j]
-#         E.append(Eq(e,0))
-# S = solve(E)
-# print(S)
-# L = 3 + S[0][yh]
-# print("L=",L)
+[Problem Statement]
+%s
+""" % problem
+    conv       = Conversation(init=LOGIC_TEMPLATE, auto_print=False)
+    res        = conv(task)
+    scoring    = []
+    processors = ProcessorPipeline([StripPostProcessor(), CodeExtractPostProcessor()])
+    code       = Symbol(processors(str(res), None))
+    reader     = FileReader()
+    solution   = reader(os.path.join(cur_file_dir, 'snippets/einstein_puzzle_logic_solution.txt'))
+    sim        = code.similarity(solution)
+    scoring.append(sim)
+    solver     = SATSolver()
+    solver     = solver(code, lambda: 'German')
+    scoring.append(1.0 if solver else 0.0)
+
+    return True, {'scores': scoring}
+
