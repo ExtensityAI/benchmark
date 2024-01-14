@@ -110,7 +110,7 @@ class APIExecutor(Expression):
         return [code_sim, web_sim]
 
 
-@toggle_test(False, default=MOCK_RETURN)
+@toggle_test(ACTIVE, default=MOCK_RETURN)
 def test_api_builder():
     ref       = Symbol("Yannic Kilcher")
     rand_seq  = Symbol(RANDOM_SEQUENCE)
