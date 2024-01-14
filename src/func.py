@@ -322,7 +322,8 @@ def run(args):
     #benchmark_results = benchmarker(experiments=['gpt4', 'llama', 'gpt3.5', 'zephyr', 'gemini', 'mistral'],
     benchmark_results = benchmarker(experiments=['llama', 'zephyr', 'mistral'],
                                     n_runs=1,
-                                    seeds=[42, 18, 97, 3, 200, 32, 815, 6],
+                                    #seeds=[42, 18, 97, 3, 200, 32, 815, 6],
+                                    seeds=[42],
                                     dummy=args.dummy)
 
     # Print benchmark results

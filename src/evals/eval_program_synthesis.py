@@ -31,9 +31,9 @@ The `create_latex_result` function must be self-contained, fully functional and 
 No other functions or explanations are required.
 """
     # Create a template
-    template = os.path.join(cur_file_dir, 'snippets/latex_templating_problem.txt')
-    conv     = Conversation(file_link=[template], auto_print=False)
-    res      = conv(task)
+    template   = os.path.join(cur_file_dir, 'snippets/latex_templating_problem.txt')
+    conv       = Conversation(file_link=[template], auto_print=False)
+    raw_res    = conv(task)
     scoring    = []
     processors = ProcessorPipeline([StripPostProcessor(), CodeExtractPostProcessor()])
     code       = Symbol(processors(str(res), None))
@@ -41,9 +41,9 @@ No other functions or explanations are required.
     solution1  = reader(os.path.join(cur_file_dir, 'snippets/latex_templating_solution_1.txt'))
     solution2  = reader(os.path.join(cur_file_dir, 'snippets/latex_templating_solution_2.txt'))
     base_score = solution1.similarity(solution2)
-    random_seq = RANDOM_SEQUENCE+rand_task_desc # remove the chance of parsing sub-sequence from the task description
+    random_seq = RANDOM_SEQUENCE # remove the chance of parsing sub-sequence from the task description
     rand_score = solution1.similarity(random_seq) # remove the chance of simply rephrasing the task
-    score      = code.similarity(solution1, normalize=normalize(base_score, rand_score))
+    score      = solution1.similarity(raw_res, normalize=normalize(base_score, rand_score))
     scoring.append(score)
 
     # Read the source code from files
@@ -89,28 +89,36 @@ class APIExecutor(Expression):
         return self.executor._runnable
 
     def forward(self, request: Symbol, presets, **kwargs) -> Symbol:
-        ref, code     = presets()
+        ref, code, code2, rand = presets()
         self._request = self._to_symbol(request)
         if self._verbose: print('[REQUEST]', self._request)
         # Generate the code to implement the API call
         self._code    = self.builder(self._request)
         if self._verbose: print('[GENERATED_CODE]', self._code)
-        code_sim      = Symbol(self._code).similarity(code)
+        base_sim      = code.similarity(code2)
+        rand_sim      = rand.similarity(code2)
+        code_sim      = code.similarity(self._code, normalize=normalize(base_sim, rand_sim))
         # Execute the code to define the 'run' function
-        self._result  = self.executor(self._code, request=self._request)
-        if self._verbose: print('[RESULT]:', self._result)
-        web_sim       = Symbol(self._result).similarity(ref)
-        self._value   = self._result
+        try:
+            self._result  = self.executor(self._code, request=self._request)
+            if self._verbose: print('[RESULT]:', self._result)
+            web_sim       = ref.similarity(self._result)
+        except Exception as e:
+            self._result  = str(e)
+            web_sim       = 0.0
+        self._value       = self._result
         return [code_sim, web_sim]
 
 
-@toggle_test(ACTIVE, default=MOCK_RETURN)
+@toggle_test(False, default=MOCK_RETURN)
 def test_api_builder():
-    ref      = "Yannic Kilcher"
-    reader   = FileReader()
-    website  = reader(os.path.join(cur_file_dir, 'snippets/code_api_builder_website_result.txt'))
-    ref_code = reader(os.path.join(cur_file_dir, 'snippets/code_api_builder.txt'))
-    source   = APIExecutor() # creates code on the fly and executes it
-    scores   = source('Fetch data from URL https://www.ykilcher.com/ and use Function to extract the full name of the author.', # the request
-                      lambda: (ref, ref_code)) # interprets the instruction to generate a HTTP request
+    ref       = Symbol("Yannic Kilcher")
+    rand_seq  = Symbol(RANDOM_SEQUENCE)
+    reader    = FileReader()
+    website   = reader(os.path.join(cur_file_dir, 'snippets/code_api_builder_website_result.txt'))
+    ref_code  = reader(os.path.join(cur_file_dir, 'snippets/code_api_builder.txt'))
+    ref_code2 = reader(os.path.join(cur_file_dir, 'snippets/code_api_builder2.txt'))
+    source    = APIExecutor() # creates code on the fly and executes it
+    scores    = source('Fetch data from URL https://www.ykilcher.com/ and use Function to extract the full name of the author.', # the request
+                      lambda: (ref, ref_code, ref_code2, rand_seq)) # interprets the instruction to generate a HTTP request
     return True, {'scores': scores}

@@ -1,0 +1,13 @@
+def run(text: str) -> str:
+    import requests
+    from symai import Function
+    url = 'https://www.ykilcher.com/'
+    rsp = requests.get(url)
+    if rsp.status_code != 200:
+        raise Exception(f"Error: {rsp.status_code}")
+    res = rsp.text
+    res = str(res)
+    func = Function('extract the name from text')
+    return func(res)
+value = "Fetch data from URL https://www.ykilcher.com/"
+res = run(value)
