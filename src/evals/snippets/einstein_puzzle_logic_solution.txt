@@ -1,4 +1,4 @@
-
+```python
 from z3 import Solver, Function, IntSort, EnumSort, Int, And, Or, Xor, Const
 
 # Define the problem statement as a function that takes a solver as input and returns a query constant as output
@@ -89,3 +89,4 @@ def problem_statement(S: Solver) -> Const:
 
 # assign result to global output variable to make accessible for caller
 _value_obj_ = problem_statement
+```

@@ -196,7 +196,7 @@ The implementation must be a SAT solvable solution and follow the user problem r
     code       = Symbol(processors(str(res), None))
     reader     = FileReader()
     solution   = reader(os.path.join(cur_file_dir, 'snippets/einstein_puzzle_logic_solution.txt'))
-    sim        = code.similarity(solution)
+    sim        = solution.similarity(res)
     scoring.append(sim)
     solver     = SATSolver()
     solver     = solver(code, lambda: 'German')

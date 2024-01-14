@@ -1,0 +1,35 @@
+\section{Related Work}
+
+\paragraph{Symbolic Methods}
+The field of symbolic AI has its foundations in the works of the Logic Theorist (LT) \citep{Newell:56} and the General Problem Solver (GPS) \citep{Newell:57} \footnote{\ We base our framework's name on the aspirational work of Newell and Simon.}.
+These programs represented the first steps in automated reasoning and problem-solving using symbolic representations.
+Despite their advancements, both faced challenges in dealing with the complexity of real-world problems, particularly due to combinatorial explosion.
+To address these limitations, the Soar \citep{Laird:87} cognitive architecture was developed, advancing the notion that intelligent behavior results from goal-oriented search through a problem space \citep{Newell:72, McCarthy:06}, with each step consisting of selecting and applying operators.
+Soar introduced components like reinforcement learning, impasses, substates, and chunking to enhance its problem-solving capabilities.
+It also emphasized the importance of learning from experiences to adapt and improve performance over time.
+However, \citep{Santoro:22} emphasizes the subjectivity of symbols and suggests that human-like symbolic fluency could develop in machines through learning algorithms immersed in socio-cultural contexts.
+This perspective, anchored in the notion that symbols are triadic, and their meaning emerges from consensus, seeks to move away from traditional symbolic AI methodologies towards AI that adaptively learns meaning and behaviors from human-like experiences.
+The goal is to cultivate machines that demonstrate symbolic behaviors across a gradient of competencies, potentially mirroring the evolutionary and social learning processes observed in humans.
+Lastly, symbolic AI struggles with real-world data's unpredictability and variability.
+These challenges have underscored the significance of employing statistical learning methodologies, like deep learning \citep{Alom:18}, which are adept at managing noise and uncertain information through vector-valued representations.
+
+\paragraph{Sub-Symbolic Methods}
+The sub-symbolic framework, rooted in neural network paradigms, began with pioneering works such as the perceptron \citep{McCulloch:43}, with the first hardware implementation quickly following \citep{Rosenblatt:58}.
+The foundational notion of distributed processing \citep{Rumelhart:86} was later bolstered and further expanded by demonstrating that multilayer feedforward networks with a single hidden layer can serve as universal approximators for any Borel measurable function, given sufficient hidden units \citep{Hornik:89}.
+Fast-forward, contemporary frameworks achieve a significant leap with the introduction of the Transformer architecture \citep{Vaswani:17}, which underpins most of today's LLMs.
+These LLMs demonstrate exceptional capabilities in in-context learning, a method popularized by the likes of GPT-3 \citep{Brown:20}, where models improve task performance through natural language instruction and examples provided directly in the input prompt.
+While in-context learning bypasses the need for explicit retraining, it demands meticulous prompt design to steer models towards desired behaviors.
+Despite their versatility, current LLMs face challenges such as fallacious reasoning and the generation of erroneous content, commonly referred to as hallucinations \citep{Jones:22}.
+These limitations highlight the importance of integrating complementary symbolic methods to validate and guide the generative processes of LLMs, ensuring more accurate and reliable outputs.
+
+\paragraph{Neuro-Symbolic Methods}
+To overcome the limitations of each individual method, NeSy approaches meld the statistical inference strengths of deep neural architectures with the generalization and explainability of symbolic systems \citep{Besold:17, Yu:21, Hamilton:22, Garcez:15, Garcez:19, Garcez:20, Lamb:20}.
+Some approaches focus on different strategies for integrating learning and reasoning processes \citep{Yu:23}.
+Firstly, \emph{learning for reasoning} methods treat the learning aspect as an accelerator for reasoning, in which deep neural networks are employed to reduce the search space for symbolic systems \citep{Qu:19, Silver:16, Silver:17a, Silver:17b, Schrittwieser:20}.
+Secondly, \emph{reasoning for learning} view reasoning as a way to regularize learning, in which symbolic knowledge acts as a guiding constraint that oversees machine learning tasks \citep{Hu:16, Xu:18}.
+Thirdly, the \emph{learning-reasoning} category fosters a symbiotic relationship between learning and reasoning. Here, both elements interact and share information to boost problem-solving capabilities \citep{Donadello:17, Manhaeve:18, Mao:19, Ellis:23}.
+This synergy further extends when considering graph-based methods, which closely align with the objectives of our proposed framework. Research in this area, such as CycleGT \citep{Guo:20} and Paper2vec \citep{Ganguly:17}, explored unsupervised techniques for bridging graph and text representations.
+Subsequently, graph embeddings, when utilized within symbolic frameworks, can enhance knowledge graph reasoning tasks \citep{Zhang:21}, or more generally, provide the bedrock for learning domain-invariant representations \citep{Park:23}.
+Lastly, building upon the insights from \citep{Sun:22}, the integration of NeSy techniques in scientific workflows promises significant acceleration in scientific discovery.
+Lastly, building upon the insights from \citep{Sun:22}, the integration of NeSy techniques in scientific workflows promises significant acceleration in scientific discovery.
+While the work has effectively identified opportunities and challenges, we have taken a more ambitious approach by developing a comprehensive framework from the ground up to facilitate a wide range of NeSy integrations.

@@ -322,7 +322,7 @@ def test_program():
     reader = FileReader()
     cur_file_dir = os.path.dirname(os.path.abspath(__file__))
     target = reader(os.path.join(cur_file_dir, 'snippets/richard_feynman_summary.txt'))
-    res    = expr("Write an article about Richard Feynman and who his doctoral students were in Markdown format.")
+    res    = expr("Write a paper about the SymbolicAI framework from GitHub https://github.com/ExtensityAI/symbolicai. Include citations and references from the papers directory ./snippets/papers.")
     print(res)
     return True, {'scores': [1.0]}
 

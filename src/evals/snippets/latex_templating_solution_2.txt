@@ -1,3 +1,4 @@
+```python
 def create_latex_result(data):
     modelnames = " & ".join(key for key in data.keys())
     totalscores = {model: 0.0 for model in data.keys()}
@@ -25,3 +26,4 @@ def create_latex_result(data):
         benchmark_computation_graphs_row=benchmarkrows[BENCHMARK_NAME_MAPPING['eval_computation_graphs']],
         total_row='Total' + total_values
     )
+```

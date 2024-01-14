@@ -16,9 +16,6 @@ cur_file_dir = os.path.dirname(os.path.abspath(__file__))
 
 @toggle_test(ACTIVE, default=MOCK_RETURN)
 def test_latex_templating():
-    rand_task_desc = """[Task]
-    Create a function that takes in the values as data and parses the LaTeX table rows and columns based on the data results. The table should follow the latex template format and populate the rows table as indicated by the placeholder variables. Mark the best performing model per row with bold text. At the bottom of the benchmarks, place the values of the total row by computing the average over all columns and populating the value entry in the template.
-    """
     task      = """[Task]
 Create a function `create_latex_result` that takes in the `benchmark_results` as `data` and parses the LaTeX table rows and columns based on the `data` results. The table should follow the `latex_template` format and populate the rows table as indicated by the placeholder variables. Mark the best performing model per row with bold text. At the bottom of the benchmarks, place the values of the total row by computing the average over all columns and populating the `total_values` entry in the `latex_template`.
 The table should be returned as a string by the function.
