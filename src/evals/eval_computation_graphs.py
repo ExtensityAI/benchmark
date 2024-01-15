@@ -366,7 +366,7 @@ def test_sub_routine_web_crawler():
 
 
 @toggle_test(SUB_ROUTINE_ACTIVE, default=MOCK_RETURN)
-def test_sub_routine_web_crawler():
+def test_sub_routine_paper_indexer():
     # define the task
     task   = "Explain the central concepts in programming language theory used in SymbolicAI using the indexed papers."
     # choose the correct function context
@@ -379,4 +379,24 @@ def test_sub_routine_web_crawler():
     res    = func(task)
     # check the sub-routine result
     res    = 'Chomsky' in res.join()
+    return res, {'scores': [float(res)]}
+
+
+@toggle_test(SUB_ROUTINE_ACTIVE, default=MOCK_RETURN)
+def test_sub_routine_os_commands():
+    # define the task
+    task   = "Create a new text file named `results/test.txt` in the `results` directory and write the text `Hello World!` to the file."
+    # choose the correct function context
+    choice = Choice(FUNCTIONS.keys())
+    option = choice(task, temperature=0.0)
+    option = Symbol(option).similarity(Symbol.symbols(*FUNCTIONS.keys())).argmax()
+    key    = list(FUNCTIONS.keys())[option]
+    func   = FUNCTIONS[key]
+    os.makedirs('results', exist_ok=True)
+    # run the sub-routine function
+    func(task)
+    # check the sub-routine result
+    res    = os.path.exists('results/test.txt')
+    # clean up
+    os.remove('results/test.txt')
     return res, {'scores': [float(res)]}
