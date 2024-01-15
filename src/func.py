@@ -202,10 +202,13 @@ class EvaluateBenchmark(Expression):
                         engine, rate_exception = self.prepare(experiment, seed, config, results, type)
                         # set experiment name
                         experiment = MODEL_NAME_MAPPING[experiment]
+                        # is mock test
+                        is_mock = False
                         # Run the test function
                         # Use exponential backoff to handle API rate limit exceptions
                         @backoff.on_exception(backoff.expo, rate_exception, max_time=60)
                         def run_with_backoff(*args, **kwargs):
+                            nonlocal is_mock
                             start_time      = time()  # Start timing
                             try:
                                 res, info = test_func(*args, **kwargs)
@@ -224,20 +227,31 @@ class EvaluateBenchmark(Expression):
                                 'success': res,
                                 'scores': info['scores']
                             }
-                            results[experiment][type]['run_list'].append(entry)
+                            # Check if the test function is a mock test
+                            if 'mock' in info and info['mock']:
+                                is_mock = True
+                            else:
+                                results[experiment][type]['run_list'].append(entry)
                             return res, elapsed_time, info['scores']
                         # Run the test function with backoff
                         experiment_cnt += 1
                         result, elapsed_time, scores = run_with_backoff()
-                        results[experiment][type]['total_time'].append(elapsed_time)     # Accumulate time
-                        # Check if the test function passed
-                        results[experiment][type]['scores'].append(np.mean(scores))      # Count scoring
-                        if result:
-                            results[experiment][type]['success'].append(1.0)    # Count success
+                        # Check if the test function is a mock test
+                        if is_mock:
+                            # remove the mock test from the results statistics
+                            experiment_cnt -= 1
+                            results[experiment][type]['total_runs'] -= 1
+                        else:
+                            results[experiment][type]['total_time'].append(elapsed_time)     # Accumulate time
+                            # Check if the test function passed
+                            results[experiment][type]['scores'].append(np.mean(scores))      # Count scoring
+                            if result:
+                                results[experiment][type]['success'].append(1.0)    # Count success
                         # Update progress bar
                         progress.update(1)
                         # print progress
-                        progress.set_postfix({f'{experiment}: mean score': np.sum(results[experiment][type]['scores']) / experiment_cnt, 'time': elapsed_time})
+                        mean_score = np.sum(results[experiment][type]['scores']) / experiment_cnt if experiment_cnt > 0 else 0.0
+                        progress.set_postfix({f'{experiment}: mean score': mean_score, 'time': elapsed_time})
 
         # Calculate the average scoring for associations
         for experiment in experiments:

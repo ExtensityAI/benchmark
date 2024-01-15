@@ -382,7 +382,7 @@ def test_sub_routine_paper_indexer():
     return res, {'scores': [float(res)]}
 
 
-@toggle_test(SUB_ROUTINE_ACTIVE, default=MOCK_RETURN)
+@toggle_test(True, default=MOCK_RETURN)
 def test_sub_routine_os_commands():
     # define the task
     task   = "Create a new text file named `results/test.txt` in the `results` directory and write the text `Hello World!` to the file."
