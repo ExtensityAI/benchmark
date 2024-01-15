@@ -3,7 +3,7 @@ import os
 from src.utils import normalize, rand_ast_similarity, ast_similarity, RANDOM_SEQUENCE, MOCK_RETURN
 
 from symai import Symbol, Expression, Conversation
-from symai.components import FileReader, Execute
+from symai.components import FileReader, Execute, RuntimeExpression, ExpressionBuilder
 from symai.processor import ProcessorPipeline
 from symai.post_processors import StripPostProcessor, CodeExtractPostProcessor
 from symai.utils import toggle_test
@@ -15,7 +15,7 @@ cur_file_dir = os.path.dirname(os.path.abspath(__file__))
 
 
 @toggle_test(ACTIVE, default=MOCK_RETURN)
-def test_latex_templating():
+def test_application_template():
     task      = """[Task]
 Create a function `create_latex_result` that takes in the `benchmark_results` as `data` and parses the LaTeX table rows and columns based on the `data` results. The table should follow the `latex_template` format and populate the rows table as indicated by the placeholder variables. Mark the best performing model per row with bold text. At the bottom of the benchmarks, place the values of the total row by computing the average over all columns and populating the `total_values` entry in the `latex_template`.
 The table should be returned as a string by the function.
@@ -119,3 +119,56 @@ def test_api_builder():
     scores    = source('Fetch data from URL https://www.ykilcher.com/ and use Function to extract the full name of the author.', # the request
                       lambda: (ref, ref_code, ref_code2, rand_seq)) # interprets the instruction to generate a HTTP request
     return True, {'scores': scores}
+
+
+@toggle_test(ACTIVE, default=MOCK_RETURN)
+def test_expression_builder():
+    solution1 = Symbol("""
+# do not remove or change the imports
+from symai import Expression, Function, Symbol
+class QueryExpression(Expression):
+    # initialize the expression with task specific arguments
+    def __init__(self, prompt: str, **kwargs):
+        super().__init__(**kwargs)
+        self.func = Function(prompt, **kwargs)
+
+    # define the forward function with data specific arguments
+    def forward(self, sym: Symbol, *args, **kwargs) -> Symbol:
+        sym = self._to_symbol(sym)
+        result = self.func(sym, *args, **kwargs)
+        return result
+# assign the expression type to the variable _value_obj_
+_value_obj_ = QueryExpression
+""")
+    solution2 = Symbol("""
+from symai import Expression, Function, Symbol
+class QueryExpression(Expression):
+    def __init__(self, prompt: str, **kwargs):
+        super().__init__(**kwargs)
+        self.func = Function(prompt, **kwargs)
+    def forward(self, sym: Symbol, *args, **kwargs) -> Symbol:
+        sym = self._to_symbol(sym)
+        return self.func(sym, *args, **kwargs)
+_value_obj_ = QueryExpression
+""")
+    builder  = ExpressionBuilder()
+    code     = builder("Create a query Expression that is initializes a Function with a prompt and processes a data Symbol based on the custom Function.")
+    runner   = RuntimeExpression()
+    scoring  = []
+    try:
+        expr    = runner(code)
+        scoring.append(1.0)
+    except:
+        scoring.append(0.0)
+    query    = expr('extract the names from the text')
+    base_sim = solution1.similarity(solution2)
+    rand_sim = solution1.similarity(RANDOM_SEQUENCE)
+    sim      = solution1.similarity(code, normalize=normalize(base_sim, rand_sim))
+    scoring.append(sim)
+    try:
+        res  = query('Hello my name is Max and I am 20 years old.')
+        sim  = res.similarity('Max')
+        scoring.append(sim)
+    except:
+        scoring.append(0.0)
+    return True, {'scores': scoring}

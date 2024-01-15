@@ -6,14 +6,12 @@ from src.utils import MOCK_RETURN
 
 from symai import Symbol, Expression, Function, Interface
 from symai.utils import toggle_test
-from symai.components import Choice, Execute, Sequence, FileReader
-from symai.processor import ProcessorPipeline
-from symai.constraints import DictFormatConstraint
-from symai.post_processors import StripPostProcessor, CodeExtractPostProcessor, JsonTruncateMarkdownPostProcessor
-from symai.pre_processors import PreProcessor
+from symai.components import Choice, Extract, Sequence, FileReader, RuntimeExpression, PrepareData, ExpressionBuilder
+from symai.extended.seo_query_optimizer import SEOQueryOptimizer
+from symai.extended.os_command import OSCommand
 
 
-ACTIVE = True
+ACTIVE = False
 DataDictionary = Symbol({})
 
 
@@ -94,117 +92,76 @@ Instruction: "Write a document about the history of AI."
 """ % '\n'.join([k for k in FUNCTIONS.keys()])
 
 
-class CodeGeneration(Function):
+FUNCTIONS = {}
+
+
+class AppendFunction(Expression):
     def __init__(self, **kwargs):
-        super().__init__('Generate the code following the instructions:', **kwargs)
-        self.processors = ProcessorPipeline([StripPostProcessor(), CodeExtractPostProcessor()])
+        super().__init__(**kwargs)
+        self.functions = FUNCTIONS
 
-    def forward(self, instruct, *args, **kwargs):
-        result = super().forward(instruct)
-        return self.processors(str(result), None)
-
-    @property
-    def static_context(self):
-        return """[Description]
-Your goal is to generate the code of the forward function following the instruction of the extracted task and task description. Expect that all imports are already defined. Only produce the code for the TODO section as shown below:
-
-[Template]
-class TemplateExpression(Expression):
-    def forward(self, instruct, *args, **kwargs):
-        result = None
-        ```python
-        # TODO: Place here the generated code.
-        ```
-        return result
-
-All code is executed in the same Python process. Expect all task expressions and functions to be defined in the same process. Generate the code within a ```python # TODO: ``` code block as shown in the example. The code must be self-contained, include all imports and executable.
-"""
+    def forward(self, func, *args, **kwargs):
+        self.functions.append(func)
+        return self
 
 
-FUNCTIONS = {"""
+FUNCTIONS.update({"""
 >>>[SEARCH ENGINE]
 # Search the web using the Google search engine to find information of topics, people, or places. Used for searching facts or information.
 expr = Interface('serpapi')
 res  = expr('search engine query') # example query: "weather in New York"
 res # str containing the weather report
-<<<""": Interface('serpapi'),
+<<<""": Sequence(
+    SEOQueryOptimizer(),
+    Interface('serpapi')
+),
 """
 >>>[WEB BROWSER]
 # Using the Selenium web driver to get the content of a web page.
 expr = Interface('selenium')
 res  = expr('web URL') # example URL: https://www.google.com
 res  # str containing the web page source content
-<<<""": Interface('selenium'),
+<<<""": Sequence(
+    Extract('web URL'),
+    Interface('selenium')
+),
+"""
+>>>[PAPER LIBRARY]
+# Using the paper library index to search for papers and extract information from the paper.
+expr = Interface('pinecone')
+res  = expr('kernel density estimation conclusion') # example query: "kernel density estimation"
+res  # str containing a list of paper citations with content
+<<<""": Sequence(
+    SEOQueryOptimizer(),
+    Interface('pinecone')
+),
 """
 >>>[TERMINAL]
 # Using the subprocess terminal module to execute shell commands.
 expr = Interface('terminal')
 expr('shell command') # example command: 'ls -l'
-<<<""": Interface('terminal'),
+<<<""": OSCommand([
+    'touch file.txt',
+    'echo "text" > file.txt'
+]),
 """
 >>>[LARGE LANGUAGE MODEL]
 # Using a large language model to build queries, provide instructions, generate content, extract patterns, and more. NOT used for searching facts or information.
 expr = Function('LLM query or instruction') # example query: 'Extract the temperature value from the weather report.'
 res  = expr('data') # example data: 'The temperature in New York is 20 degrees.'
 res  # str containing the query result or generated text i.e. '20 degrees'
-<<<""": Function('Follow the instruction of the task.'),
+<<<""": Function('Follow the task instruction.'),
 """
 >>>[DEFINE CUSTOM EXPRESSION]
 # Define a custom sub-process and code using the `Expression` class and a static_context description which can be re-used as an Expression for repetitive tasks to avoid multiple instructions for the same type of task.
 class MyExpression(Expression): # class name of the custom expression
     def static_context(self):
         return '''Multi-line description of the expression specifying the context of the expression with examples, instructions, desired return format and other information.'''
-<<<""": CodeGeneration()}
-
-
-class PrepareData(Function):
-    class PrepareDataPreProcessor(PreProcessor):
-        def __call__(self, argument):
-            assert argument.prop.context is not None
-            instruct = argument.prop.prompt
-            context  = argument.prop.context
-            return """{
-    'context': '%s',
-    'instruction': '%s',
-    'result': 'TODO: Replace this with the expected result.'
-}""" % (context, instruct)
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.pre_processors  = [self.PrepareDataPreProcessor()]
-        self.constraints     = [DictFormatConstraint({ 'result': '<the data>' })]
-        self.post_processors = [JsonTruncateMarkdownPostProcessor()]
-        self.return_type     = dict # constraint to cast the result to a dict
-
-    @property
-    def static_context(self):
-        return """[CONTEXT]
-Your goal is to prepare the data for the next task instruction. The data should follow the format of the task description based on the given context. Replace the `TODO` section with the expected result of the data preparation. Only provide the 'result' json-key as follows: ```json\n{ 'result': 'TODO:...' }\n```
-
-[GENERAL TEMPLATE]
-```json
-{
-    'context': 'The general context of the task.',
-    'instruction': 'The next instruction of the task for the data preparation.',
-    'result': 'The expected result of the data preparation.'
-}
-```
-
-[EXAMPLE]
-[Instruction]:
-{
-    'context': 'Write a document about the history of AI and include references to the following people: Alan Turing, John McCarthy, Marvin Minsky, and Yoshua Bengio.',
-    'instruction': 'Google the history of AI for Alan Turing',
-    'result': 'TODO'
-}
-
-[Result]:
-```json
-{
-    'result': 'Alan Turing history of AI'
-}
-```
-"""
+<<<""": Sequence(
+    ExpressionBuilder(),
+    RuntimeExpression(),
+    AppendFunction()
+)})
 
 
 class SequentialScheduler(Expression):
@@ -325,11 +282,3 @@ def test_program():
     res    = expr("Write a paper about the SymbolicAI framework from GitHub https://github.com/ExtensityAI/symbolicai. Include citations and references from the papers directory ./snippets/papers.")
     print(res)
     return True, {'scores': [1.0]}
-
-
-if __name__ == '__main__':
-    prompt  = 'Create a search query for the weather in New York.'
-    context = 'Report on the weather to compare between multiple cities including New York, London, and Paris.'
-    func    = PrepareData(prompt, context=context)
-    res     = func(context)
-    print(res)
