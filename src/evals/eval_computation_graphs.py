@@ -96,17 +96,51 @@ FUNCTIONS = {}
 
 
 class AppendFunction(Expression):
-    def __init__(self, **kwargs):
+    def __init__(self, sequence, **kwargs):
         super().__init__(**kwargs)
+        self.sequence  = sequence
         self.functions = FUNCTIONS
+        self.desc_func = Function('Create a description for the custom expression.', static_context="""[Description]
+Write a short and simple description in the format >>>[ ... name ... ]\n... text ...\n<<<. The description should be one or two sentence long, include a description of the expression purpose and offer one specific example how to use the expression.
 
-    def forward(self, func, *args, **kwargs):
-        self.functions.append(func)
-        return self
+[Additional Expression Information]
+class Expression(Symbol):
+    # initialize the expression with task specific arguments
+    def __init__(self, *args, **kwargs):
+        super().__init__(**kwargs)
+        # Here custom code
+    # define the forward function with data specific arguments
+    def forward(self, sym: Symbol, *args, **kwargs) -> Symbol:
+        sym = self._to_symbol(sym) # ensure that sym is a Symbol
+        result = None
+        # Here custom code
+        return result
+
+[Example for a Paper Library Expression]
+>>>[PAPER LIBRARY]
+# Using the paper library index to search for papers and extract information from the paper.
+expr = Interface('pinecone')
+res  = expr('kernel density estimation conclusion') # example query: "kernel density estimation"
+res  # str containing a list of paper citations with content
+<<<
+
+[Output Format]
+>>>[ ... TODO: NAME OF THE EXPRESSION ...   ]
+... # TODO: add your custom expression description here
+<<<
+
+From the output format example, you should replace all TODOs with the correct information.
+""")
+
+    def forward(self, task, *args, **kwargs):
+        func = self.sequence(task, *args, **kwargs)
+        desc = self.desc_func(task | func)
+        expr = {desc.value: func.value}
+        self.functions.update(expr)
+        return self._to_symbol(expr)
 
 
-FUNCTIONS.update({"""
->>>[SEARCH ENGINE]
+FUNCTIONS.update({""">>>[SEARCH ENGINE]
 # Search the web using the Google search engine to find information of topics, people, or places. Used for searching facts or information.
 expr = Interface('serpapi')
 res  = expr('search engine query') # example query: "weather in New York"
@@ -115,8 +149,7 @@ res # str containing the weather report
     SEOQueryOptimizer(),
     Interface('serpapi')
 ),
-"""
->>>[WEB BROWSER]
+""">>>[WEB BROWSER]
 # Using the Selenium web driver to get the content of a web page.
 expr = Interface('selenium')
 res  = expr('web URL') # example URL: https://www.google.com
@@ -125,43 +158,35 @@ res  # str containing the web page source content
     Extract('web URL'),
     Interface('selenium')
 ),
-"""
->>>[PAPER LIBRARY]
-# Using the paper library index to search for papers and extract information from the paper.
+""">>>[PAPER LIBRARY]
+# Using the paper library index to search for papers and extract information from papers.
 expr = Interface('pinecone')
 res  = expr('kernel density estimation conclusion') # example query: "kernel density estimation"
 res  # str containing a list of paper citations with content
 <<<""": Sequence(
     SEOQueryOptimizer(),
-    Interface('pinecone')
+    Interface('pinecone', index_name='dataindex', raw_result=True)
 ),
-"""
->>>[TERMINAL]
+""">>>[TERMINAL]
 # Using the subprocess terminal module to execute shell commands.
-expr = Interface('terminal')
-expr('shell command') # example command: 'ls -l'
+expr = OSCommand()
+expr('shell command') # example command: 'echo "text" > file.txt'
 <<<""": OSCommand([
-    'touch file.txt',
-    'echo "text" > file.txt'
+    'touch file.txt # create a new file',
+    'echo "text" > file.txt # write text to file',
 ]),
-"""
->>>[LARGE LANGUAGE MODEL]
+""">>>[LARGE LANGUAGE MODEL]
 # Using a large language model to build queries, provide instructions, generate content, extract patterns, and more. NOT used for searching facts or information.
 expr = Function('LLM query or instruction') # example query: 'Extract the temperature value from the weather report.'
 res  = expr('data') # example data: 'The temperature in New York is 20 degrees.'
 res  # str containing the query result or generated text i.e. '20 degrees'
 <<<""": Function('Follow the task instruction.'),
-"""
->>>[DEFINE CUSTOM EXPRESSION]
-# Define a custom sub-process and code using the `Expression` class and a static_context description which can be re-used as an Expression for repetitive tasks to avoid multiple instructions for the same type of task.
-class MyExpression(Expression): # class name of the custom expression
-    def static_context(self):
-        return '''Multi-line description of the expression specifying the context of the expression with examples, instructions, desired return format and other information.'''
-<<<""": Sequence(
+""">>>[DEFINE CUSTOM EXPRESSION]
+# Define a custom sub-process using the `Expression` class and a description which can be re-used as an Expression for repetitive tasks to avoid multiple instructions for the same type of task.
+<<<""": AppendFunction(Sequence(
     ExpressionBuilder(),
     RuntimeExpression(),
-    AppendFunction()
-)})
+))})
 
 
 class SequentialScheduler(Expression):
@@ -183,7 +208,7 @@ class SequentialScheduler(Expression):
         # If the task is a subtask, choose the correct function context.
         if task.startswith('>>') and '[SUBTASK]' in task:
             # Choose the correct function context.
-            option = self.choice(task)
+            option = self.choice(task, temperature=0.0)
             option = Symbol(option).similarity(Symbol.symbols(*FUNCTIONS.keys())).argmax()
             # Run the expression
             key    = list(FUNCTIONS.keys())[option]
@@ -210,7 +235,7 @@ class Evaluate(Expression):
         # TODO: ...
 
 
-class Program(Expression):
+class Agent(Expression):
     def __init__(self, halt_threshold: float = 0.85,
                  max_iterations: int = 3,
                  scheduler = SequentialScheduler,
@@ -275,10 +300,83 @@ class Program(Expression):
 
 @toggle_test(ACTIVE, default=MOCK_RETURN)
 def test_program():
-    expr   = Program()
+    expr   = Agent()
     reader = FileReader()
     cur_file_dir = os.path.dirname(os.path.abspath(__file__))
     target = reader(os.path.join(cur_file_dir, 'snippets/richard_feynman_summary.txt'))
     res    = expr("Write a paper about the SymbolicAI framework from GitHub https://github.com/ExtensityAI/symbolicai. Include citations and references from the papers directory ./snippets/papers.")
     print(res)
     return True, {'scores': [1.0]}
+
+
+SUB_ROUTINE_ACTIVE = False
+
+
+@toggle_test(SUB_ROUTINE_ACTIVE, default=MOCK_RETURN)
+def test_sub_routine_custom_expression():
+    # define the task
+    task   = "Create a query Expression that is initializes a Function with a prompt and processes a data Symbol based on the custom Function."
+    # choose the correct function context
+    choice = Choice(FUNCTIONS.keys())
+    option = choice(task, temperature=0.0)
+    option = Symbol(option).similarity(Symbol.symbols(*FUNCTIONS.keys())).argmax()
+    key    = list(FUNCTIONS.keys())[option]
+    func   = FUNCTIONS[key]
+    # run the sub-routine function
+    entry  = func(task)
+    expr   = list(entry.values())[0]('extract the temperature value from the weather report.')
+    val    = expr('The temperature in New York is 20 degrees.')
+    # check the sub-routine result
+    res    = '20' in val
+    return res, {'scores': [float(res)]}
+
+
+@toggle_test(SUB_ROUTINE_ACTIVE, default=MOCK_RETURN)
+def test_sub_routine_search_engine():
+    # define the task
+    task   = "How is the weather in New York today?"
+    # choose the correct function context
+    choice = Choice(FUNCTIONS.keys())
+    option = choice(task, temperature=0.0)
+    option = Symbol(option).similarity(Symbol.symbols(*FUNCTIONS.keys())).argmax()
+    key    = list(FUNCTIONS.keys())[option]
+    func   = FUNCTIONS[key]
+    # run the sub-routine function
+    res    = func(task)
+    # check the sub-routine result
+    res    = 'Success' == res.raw['search_metadata']['status']
+    return res, {'scores': [float(res)]}
+
+
+@toggle_test(SUB_ROUTINE_ACTIVE, default=MOCK_RETURN)
+def test_sub_routine_web_crawler():
+    # define the task
+    task   = "Open up the website https://www.cnbc.com/investing/"
+    # choose the correct function context
+    choice = Choice(FUNCTIONS.keys())
+    option = choice(task, temperature=0.0)
+    option = Symbol(option).similarity(Symbol.symbols(*FUNCTIONS.keys())).argmax()
+    key    = list(FUNCTIONS.keys())[option]
+    func   = FUNCTIONS[key]
+    # run the sub-routine function
+    res    = func(task)
+    # check the sub-routine result
+    res    = 'CNBC' in res
+    return res, {'scores': [float(res)]}
+
+
+@toggle_test(SUB_ROUTINE_ACTIVE, default=MOCK_RETURN)
+def test_sub_routine_web_crawler():
+    # define the task
+    task   = "Explain the central concepts in programming language theory used in SymbolicAI using the indexed papers."
+    # choose the correct function context
+    choice = Choice(FUNCTIONS.keys())
+    option = choice(task, temperature=0.0)
+    option = Symbol(option).similarity(Symbol.symbols(*FUNCTIONS.keys())).argmax()
+    key    = list(FUNCTIONS.keys())[option]
+    func   = FUNCTIONS[key]
+    # run the sub-routine function
+    res    = func(task)
+    # check the sub-routine result
+    res    = 'Chomsky' in res.join()
+    return res, {'scores': [float(res)]}
