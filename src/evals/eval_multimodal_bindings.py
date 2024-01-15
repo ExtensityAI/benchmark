@@ -245,7 +245,7 @@ def test_comparison():
 
 @toggle_test(ACTIVE, default=MOCK_RETURN)
 def test_ocr_engine():
-    query   = "Extract the current balance from the bill."
+    query   = "Extract the current balance from the bill image."
 
     answer = Symbol("$ 21,920.37")
     expr   = MultiModalExpression(query)
