@@ -59,7 +59,7 @@ class MultiModalExpression(Expression):
         option       = assertion()
 
         # testing the category detection accuracy
-        category = self.choice(self.category.options.values(), default='unknown')
+        category = self.choice(self.category.options.values(), default='unknown', temperature=0.0)
         score    = category.similarity(self.category.options[option])
 
         return option, score
@@ -78,7 +78,7 @@ class MultiModalExpression(Expression):
             score    = ref_formula.similarity(formula, metric='cosine')
             scoring.append(score)
             # subtypes of mathematical formula
-            if formula.isinstanceof(LINEAR_FUNCTION):
+            if formula.isinstanceof(LINEAR_FUNCTION, temperature=0.0):
                 if instance_type == LINEAR_FUNCTION:
                     scoring.append(1.0)
                 else:
@@ -93,7 +93,7 @@ class MultiModalExpression(Expression):
                 score    = answer.similarity(res, metric='cosine')
                 scoring.append(score)
 
-            elif formula.isinstanceof(NUMBER_COMPARISON):
+            elif formula.isinstanceof(NUMBER_COMPARISON, temperature=0.0):
                 if instance_type == NUMBER_COMPARISON:
                     scoring.append(1.0)
                 else:
