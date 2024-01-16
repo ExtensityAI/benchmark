@@ -5,7 +5,7 @@
     },
     "gpt3.5": {
         "api_key": "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",
-        "model": "gpt-3.5-turbo-1106"
+        "model": "gpt-3.5-turbo"
     },
     "gemini": {
         "api_key": "AIzaSyAcKBcfOC3xSR8-MaFQfgemfG-PxP7Kliw",

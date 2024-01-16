@@ -1,5 +1,5 @@
 ```python
-from z3 import *
+from z3 import Solver, Function, IntSort, EnumSort, Int, And, Or, Xor, Const
 
 # Sorts of things we have
 Color      , (Red     , Green   , White     , Yellow   , Blue)   = EnumSort('Color'      , ('Red'     , 'Green'   , 'White'     , 'Yellow'   , 'Blue'))
@@ -66,11 +66,11 @@ fact2 (lambda i, j: And(s(i) == Volleyball, b(j) == Water,    neighbor(i, j)))  
 fishOwner = Const("fishOwner", Nationality)
 fact1 (lambda i: And(n(i) == fishOwner, p(i) == Fish))
 
+# Return answer
 r = S.check()
 if r == sat:
     m = S.model()
-    print(m[fishOwner])
+    answer = m[fishOwner]
 else:
-    print("Solver said: %s" % r)
+    answer = "Failed!"
 ```
-
