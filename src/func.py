@@ -126,7 +126,7 @@ class EvaluateBenchmark(Expression):
         self.eval_program_synthesis = eval_program_synthesis
         self.eval_components = eval_components
         self.eval_computation_graphs = eval_computation_graphs
-        EngineRepository.register('index', VectorDBIndexEngine(index_name='dataindex', index_dims=768, index_top_k=3))
+        EngineRepository.register('index', VectorDBIndexEngine(index_name='dataindex', index_dims=768, index_top_k=5))
         # Register embeddings engine globally for all Symbols from plugin
         EngineRepository.register_from_plugin('embedding', plugin='ExtensityAI/embeddings', kwargs={'model': 'all-mpnet-base-v2'}, allow_engine_override=True)
 
