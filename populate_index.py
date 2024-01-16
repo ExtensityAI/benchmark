@@ -20,6 +20,5 @@ def run():
     vectorDB.save()
 
 
-
 if __name__ == '__main__':
     run()

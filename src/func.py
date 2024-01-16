@@ -13,6 +13,7 @@ from typing import List, Callable, Optional
 from symai import Expression
 from symai.functional import EngineRepository
 from symai.backend.engines.neurosymbolic.engine_openai_gptX_chat import GPTXChatEngine
+from symai.backend.engines.index.engine_vectordb import VectorDBIndexEngine
 
 from src.engines.engine_llamacpp import LLaMACppClientEngine
 from src.engines.engine_google_vertex import GoogleGeminiEngine
@@ -125,6 +126,7 @@ class EvaluateBenchmark(Expression):
         self.eval_program_synthesis = eval_program_synthesis
         self.eval_components = eval_components
         self.eval_computation_graphs = eval_computation_graphs
+        EngineRepository.register('index', VectorDBIndexEngine(index_name='dataindex', index_dims=768, index_top_k=3))
         # Register embeddings engine globally for all Symbols from plugin
         EngineRepository.register_from_plugin('embedding', plugin='ExtensityAI/embeddings', kwargs={'model': 'all-mpnet-base-v2'}, allow_engine_override=True)
 

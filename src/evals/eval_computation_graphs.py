@@ -365,7 +365,7 @@ def test_sub_routine_web_crawler():
     return res, {'scores': [float(res)]}
 
 
-@toggle_test(SUB_ROUTINE_ACTIVE, default=MOCK_RETURN)
+@toggle_test(True, default=MOCK_RETURN)
 def test_sub_routine_paper_indexer():
     # define the task
     task   = "Explain the central concepts in programming language theory used in SymbolicAI using the indexed papers."
