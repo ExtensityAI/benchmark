@@ -1,0 +1,76 @@
+```python
+from z3 import *
+
+# Sorts of things we have
+Color      , (Red     , Green   , White     , Yellow   , Blue)   = EnumSort('Color'      , ('Red'     , 'Green'   , 'White'     , 'Yellow'   , 'Blue'))
+Nationality, (Briton  , Dane    , Swede     , Norwegian, German) = EnumSort('Nationality', ('Briton'  , 'Dane'    , 'Swede'     , 'Norwegian', 'German'))
+Beverage   , (Tea     , Coffee  , Milk      , Beer     , Water)  = EnumSort('Beverage'   , ('Tea'     , 'Coffee'  , 'Milk'      , 'Beer'     , 'Water'))
+Pet        , (Dog     , Horse   , Cat       , Bird     , Fish)   = EnumSort('Pet'        , ('Dog'     , 'Horse'   , 'Cat'       , 'Bird'     , 'Fish'))
+Sport      , (Football, Baseball, Volleyball, Hockey   , Tennis) = EnumSort('Sport'      , ('Football', 'Baseball', 'Volleyball', 'Hockey'   , 'Tennis'))
+
+# Uninterpreted functions to match "houses" to these sorts. We represent houses by regular symbolic integers.
+c = Function('color',       IntSort(), Color)
+n = Function('nationality', IntSort(), Nationality)
+b = Function('beverage',    IntSort(), Beverage)
+p = Function('pet',         IntSort(), Pet)
+s = Function('sport',       IntSort(), Sport)
+
+S = Solver()
+
+# Create a new fresh variable. We don't care about its name
+v = 0
+def newVar():
+    global v
+    i = Int("v" + str(v))
+    v = v + 1
+    S.add(1 <= i, i <= 5)
+    return i
+
+# Assert a new fact. This is just a synonym for add, but keeps everything uniform
+def fact0(f):
+    S.add(f)
+
+# Assert a fact about a new fresh variable
+def fact1(f):
+    i = newVar()
+    S.add(f(i))
+
+# Assert a fact about two fresh variables
+def fact2(f):
+    i = newVar()
+    j = newVar()
+    S.add(i != j)
+    S.add(f(i, j))
+
+# Assert two houses are next to each other
+def neighbor(i, j):
+    return (Or(i == j+1, j == i+1))
+
+fact1 (lambda i   : And(n(i) == Briton,     c(i) == Red))                       # The Briton lives in the red house.
+fact1 (lambda i   : And(n(i) == Swede,      p(i) == Dog))                       # The Swede keeps dogs as pets.
+fact1 (lambda i   : And(n(i) == Dane,       b(i) == Tea))                       # The Dane drinks tea.
+fact2 (lambda i, j: And(c(i) == Green,      c(j) == White, i == j-1))           # The green house is left to the white house.
+fact1 (lambda i   : And(c(i) == Green,      b(i) == Coffee))                    # The owner of the green house drinks coffee.
+fact1 (lambda i   : And(s(i) == Football,   p(i) == Bird))                      # The person who plays football rears birds.
+fact1 (lambda i   : And(c(i) == Yellow,     s(i) == Baseball))                  # The owner of the yellow house plays baseball.
+fact0 (                 b(3) == Milk)                                           # The man living in the center house drinks milk.
+fact0 (                 n(1) == Norwegian)                                      # The Norwegian lives in the first house.
+fact2 (lambda i, j: And(s(i) == Volleyball, p(j) == Cat,      neighbor(i, j)))  # The man who plays volleyball lives next to the one who keeps cats.
+fact2 (lambda i, j: And(p(i) == Horse,      s(j) == Baseball, neighbor(i, j)))  # The man who keeps the horse lives next to the one who plays baseball.
+fact1 (lambda i   : And(s(i) == Tennis,     b(i) == Beer))                      # The owner who plays tennis drinks beer.
+fact1 (lambda i   : And(n(i) == German,     s(i) == Hockey))                    # The German plays hockey.
+fact2 (lambda i, j: And(n(i) == Norwegian,  c(j) == Blue,     neighbor(i, j)))  # The Norwegian lives next to the blue house.
+fact2 (lambda i, j: And(s(i) == Volleyball, b(j) == Water,    neighbor(i, j)))  # The man who plays volleyball has a neighbor who drinks water.
+
+# Determine who owns the fish
+fishOwner = Const("fishOwner", Nationality)
+fact1 (lambda i: And(n(i) == fishOwner, p(i) == Fish))
+
+r = S.check()
+if r == sat:
+    m = S.model()
+    print(m[fishOwner])
+else:
+    print("Solver said: %s" % r)
+```
+
