@@ -1,12 +1,12 @@
-from symai import Expression
+from symai import Function, Expression
 from symai.components import Sequence, Parallel
 from symai.extended import Conversation
 from symai.post_processors import StripPostProcessor, CodeExtractPostProcessor
 
 
-class Context(Expression):
+class Context(Function):
     def __init__(self, description: str = None, **kwargs):
-        super().__init__(**kwargs)
+        super().__init__('Replace the % TODO: with your content and follow the task description below.', **kwargs)
         self._description    = description or ''
         self.post_processors = [StripPostProcessor(), CodeExtractPostProcessor()]
 
@@ -35,7 +35,6 @@ The following is an example of your expected output:
 % TODO: your content here
 \end{{document}}
 ```
-Replace the % TODO: with your content and follow the task description below.
 
 {description}
 """.format(description=self.description)
@@ -46,8 +45,8 @@ class Paper(Expression):
         super().__init__(**kwargs)
         self.sequence = Sequence(*sequence)
 
-    def forward(self, task):
-        return self.sequence(task)
+    def forward(self, task, **kwargs):
+        return self.sequence(task, **kwargs)
 
 
 class Source(Conversation, Context):
@@ -63,8 +62,8 @@ class Method(Context):
         self.source = source
         self.source.auto_print = False
 
-    def forward(self, task):
-        summary = self.source(task)
+    def forward(self, task, **kwargs):
+        summary = self.source(task, **kwargs)
         # update the dynamic context
         self.adapt(context=summary, types=Context)
         return summary
@@ -108,7 +107,7 @@ Write a coherent related work section in the context of the paper and based on t
 """
 
 
-class Abstract():
+class Abstract(Context):
     @property
     def description(self):
         return """[Task]
@@ -116,7 +115,7 @@ Write an abstract for the paper.
 """
 
 
-class Title():
+class Title(Context):
     @property
     def description(self):
         return """[Task]

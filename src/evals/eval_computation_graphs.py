@@ -420,11 +420,13 @@ def test_sub_routine_os_commands():
 @toggle_test(True, default=MOCK_RETURN)
 def test_sub_routine_create_paper():
     # define the task
-    task   = "Write a paper about the SymbolicAI framework from GitHub https://github.com/ExtensityAI/symbolicai. Include citations and references from the papers directory ./snippets/papers."
+    reader   = FileReader()
+    solution = reader('src/evals/snippets/paper/reference_section_introduction.txt')
+    task     = Symbol("Write a paper about the SymbolicAI framework from GitHub https://github.com/ExtensityAI/symbolicai. Include citations and references from the papers directory ./snippets/papers.")
     # choose the correct function context
-    expr   = Paper(
+    expr     = Paper(
         Method(
-            Source(file_link=['src/evals/snippets/assets/symbolicai_docs.txt']),
+            Source(file_link='src/evals/snippets/assets/symbolicai_docs.txt'),
         ),
         RelatedWork(
             Cite(file_link='src/evals/snippets/bib/related_work/laird87.txt'),
@@ -436,6 +438,7 @@ def test_sub_routine_create_paper():
         Abstract(),
         Title(),
     )
-    res    = expr(task)
+    paper = expr(task)
+    res   = solution.similarity(paper)
 
-    return res, {'scores': [float(res)]}
+    return res, {'scores': [res]}
