@@ -1,0 +1,9 @@
+\section{Related Work}
+
+\paragraph{Symbolic Methods}
+The field of symbolic AI has its foundations in the works of the Logic Theorist (LT) \citep{Newell:56} and the General Problem Solver (GPS) \citep{Newell:57} \footnote{\ We base our framework's name on the aspirational work of Newell and Simon.}.
+These programs represented the first steps in automated reasoning and problem-solving using symbolic representations.
+Despite their advancements, both faced challenges in dealing with the complexity of real-world problems, particularly due to combinatorial explosion.
+To address these limitations, the Soar \citep{Laird:87} cognitive architecture was developed, advancing the notion that intelligent behavior results from goal-oriented search through a problem space \citep{Newell:72, McCarthy:06}, with each step consisting of selecting and applying operators.
+Soar introduced components like reinforcement learning, impasses, substates, and chunking to enhance its problem-solving capabilities.
+

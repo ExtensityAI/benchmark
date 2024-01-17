@@ -2,7 +2,9 @@ import os
 
 from datetime import datetime
 from ast import List
+
 from src.utils import MOCK_RETURN
+from src.evals.components.paper import Paper, RelatedWork, Cite, Abstract, Title, Method, Source
 
 from symai import Symbol, Expression, Function, Interface
 from symai.utils import toggle_test
@@ -196,11 +198,22 @@ class SequentialScheduler(Expression):
         self.choice = Choice(FUNCTIONS.keys())
         # index of the current task
         self.index  = 1
+        # pre-set optimal experiment design schedule
+        self.optimal = {
+            '>>> Context: Write a paper about the SymbolicAI framework from GitHub https://github.com/ExtensityAI/symbolicai. Include citations and references from the papers directory ./snippets/papers.': None,
+            '>[TASK]: Create the paper and framework index from the GitHub URL and papers directory.': None,
+            '>>[SUBTASK]: Use the shell to index the papers directory.': '*!./snippets/papers',
+            '>[TASK]: Write a summary of the SymbolicAI framework.': None,
+            '>>[SUBTASK]: Use the web browser to open the GitHub URL https://github.com/ExtensityAI/symbolicai.': None,
+            '>>[SUBTASK]: Use the LLM to summarize the GitHub page.': None,
+            '>[TASK]: Write the Related Work section.': None,
+        }
 
     def forward(self, tasks, memory):
         # Generate the code for each task and subtask.
         context = tasks[0]
-        task = tasks[self.index] # TODO: make a model do the scheduling
+        task = tasks[self.index]
+        # skip the helper task description
         while task.startswith('>') and '[TASK]' in task:
             print(f"Processing Task: {task}")
             self.index += 1
@@ -219,11 +232,12 @@ class SequentialScheduler(Expression):
             data   = func(context) # concat the context with the task
             # increment the task index
             self.index += 1
+            test   = list(self.optimal.values())[self.index]
             # Return the function and task.
-            return task, FUNCTIONS[key], data['result']
+            return task, test, FUNCTIONS[key], data['result']
 
         self.index += 1
-        return None, None, None
+        return None, None, None, None
 
 
 class Evaluate(Expression):
@@ -237,7 +251,7 @@ class Evaluate(Expression):
 
 class Agent(Expression):
     def __init__(self, halt_threshold: float = 0.85,
-                 max_iterations: int = 3,
+                 max_iterations: int = 1,
                  scheduler = SequentialScheduler,
                  **kwargs):
         super().__init__(**kwargs)
@@ -275,25 +289,26 @@ class Agent(Expression):
         sim         = 0.0
         n_iter      = 0
         result      = None
-
-        # Execute the program until the target goal is reached.
-        while sim < self.halt_threshold and n_iter < self.max_iterations:
+        task        = 'start'
+        # Execute the program
+        while task is not None:
             # Schedule the next task.
-            task, func, data = self.schedule(self.tasks, self.memory)
-            # Execute the task.
-            try:
-                result = func(data)
-                self.memory.append(f"EXEC SUCCESS: {task}")
-            except:
-                result = None
-                self.memory.append(f"ERROR: {func.__class__} raised an exception. {task}")
-            # Evaluate the result of the program.
-            self.eval(task, result, self.memory)
-            # update the similarity
-            sim        = Symbol(result).similarity(self.target)
-            # increment the iteration counter
-            n_iter    += 1
-
+            task, test, func, data = self.schedule(self.tasks, self.memory)
+            # Execute sub-routine until the target goal is reached.
+            while task is not None and sim < self.halt_threshold and n_iter < self.max_iterations:
+                # Execute the task.
+                try:
+                    result = func(data)
+                    self.memory.append(f"EXEC SUCCESS: {task}")
+                except:
+                    result = None
+                    self.memory.append(f"ERROR: {func.__class__} raised an exception. {task}")
+                # Evaluate the result of the program.
+                self.eval(task, result, self.memory)
+                # update the similarity
+                sim        = Symbol(result).similarity(self.target)
+                # increment the iteration counter
+                n_iter    += 1
         # Return the final result.
         return result
 
@@ -399,4 +414,28 @@ def test_sub_routine_os_commands():
     res    = os.path.exists('results/test.txt')
     # clean up
     os.remove('results/test.txt')
+    return res, {'scores': [float(res)]}
+
+
+@toggle_test(True, default=MOCK_RETURN)
+def test_sub_routine_create_paper():
+    # define the task
+    task   = "Write a paper about the SymbolicAI framework from GitHub https://github.com/ExtensityAI/symbolicai. Include citations and references from the papers directory ./snippets/papers."
+    # choose the correct function context
+    expr   = Paper(
+        Method(
+            Source(file_link=['src/evals/snippets/assets/symbolicai_docs.txt']),
+        ),
+        RelatedWork(
+            Cite(file_link='src/evals/snippets/bib/related_work/laird87.txt'),
+            Cite(file_link='src/evals/snippets/bib/related_work/mccarthy06.txt'),
+            Cite(file_link='src/evals/snippets/bib/related_work/newell56.txt'),
+            Cite(file_link='src/evals/snippets/bib/related_work/newell57.txt'),
+            Cite(file_link='src/evals/snippets/bib/related_work/newell72.txt'),
+        ),
+        Abstract(),
+        Title(),
+    )
+    res    = expr(task)
+
     return res, {'scores': [float(res)]}
