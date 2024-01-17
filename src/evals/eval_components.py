@@ -2,10 +2,10 @@
 
 from pathlib import Path
 
-from symai import Expression, Symbol
-from symai.components import Execute, FileReader, Function
+from symai import Symbol
+from symai.components import FileReader
 from symai.extended import Conversation
-from symai.post_processors import CodeExtractPostProcessor, StripPostProcessor
+from symai.post_processors import CodeExtractPostProcessor
 from symai.utils import toggle_test
 
 from src.utils import MOCK_RETURN, RANDOM_SEQUENCE, normalize
