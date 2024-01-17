@@ -48,7 +48,7 @@ def test_solve_puzzle():
     pp = CodeExtractPostProcessor()
 
     # Solve the puzzle
-    cv     = Conversation(auto_print=True)
+    cv     = Conversation(auto_print=False)
     res    = cv(template)
     code   = pp(res.value, None, tag="python")
 
@@ -78,9 +78,4 @@ def test_solve_puzzle():
     scoring.append(score)
 
     return True, {'scores': scoring}
-
-if __name__ == "__main__":
-    answer = test_solve_puzzle()
-    print(answer)
-
 
