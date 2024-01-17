@@ -1,5 +1,5 @@
 ```python
-from z3 import Solver, Function, IntSort, EnumSort, Int, And, Or, Xor, Const
+from z3 import Solver, Function, IntSort, EnumSort, Int, And, Or, Xor, Const, sat
 
 # Sorts of things we have
 Color      , (Red     , Green   , White     , Yellow   , Blue)   = EnumSort('Color'      , ('Red'     , 'Green'   , 'White'     , 'Yellow'   , 'Blue'))
