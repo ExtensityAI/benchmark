@@ -45,6 +45,7 @@ class Paper(Function):
         # create
         return super().forward(task | reverse_res, **kwargs)
 
+    @property
     def static_context(self):
         return PAPER_STATIC_CONTEXT.format(description='The paper must include a title, abstract, introduction and related work and method sections.')
 
