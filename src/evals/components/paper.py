@@ -4,14 +4,17 @@ from symai.extended import Conversation
 from symai.post_processors import StripPostProcessor, CodeExtractPostProcessor
 
 
-PAPER_STATIC_CONTEXT = """[General Context]
-Write a scientific paper about the machine learning framework called SymbolicAI which operates on the following principles:
+SYMBOLIC_AI_PAPER = """Write a scientific paper about the machine learning framework called SymbolicAI which operates on the following principles:
 - Symbolic methods
 - Sub-symbolic methods
 - Neural-symbolic methods
 - Probabilistic programming methods
 - Cognitive architectures
-Be precise in your writing and follow a scientific style. Do not use any colloquial language. However, formulate simple and understandable sentences.
+Be precise in your writing and follow a scientific style. Do not use any colloquial language. However, formulate simple and understandable sentences."""
+
+
+PAPER_STATIC_CONTEXT = """[General Context]
+{context}
 
 [Format]
 Your output format should be parsable by a LaTeX compiler. All produced content should be enclosed between the \n```latex\n ... \n``` blocks. Do not create document classes or other LaTeX meta commands. Always assume that the document class is already defined. Only produce exactly one latex block with all your content.
@@ -31,9 +34,10 @@ The following is an example of your expected output:
 
 
 class Paper(Function):
-    def __init__(self, *sequence, **kwargs):
+    def __init__(self, *sequence, context: str = SYMBOLIC_AI_PAPER, **kwargs):
         super().__init__(**kwargs)
         self.sequence = Sequence(*sequence)
+        self.context  = context
 
     def forward(self, task, **kwargs):
         # execute the sequence of tasks
@@ -47,14 +51,15 @@ class Paper(Function):
 
     @property
     def static_context(self):
-        return PAPER_STATIC_CONTEXT.format(description='The paper must include a title, abstract, introduction and related work and method sections.')
+        return PAPER_STATIC_CONTEXT.format(context=self.context, description='The paper must include a title, abstract, introduction and related work and method sections.')
 
 
 class Context(Conversation):
-    def __init__(self, **kwargs):
+    def __init__(self, context: str = SYMBOLIC_AI_PAPER, **kwargs):
         super().__init__(**kwargs)
         self.auto_print   = False
         self.prompt       = 'Replace the % TODO: with your content and follow the task description below.'
+        self.context      = context
 
     def forward(self, task, *args, **kwargs):
         function = Function(self.prompt,
@@ -69,15 +74,15 @@ class Context(Conversation):
 
     @property
     def static_context(self):
-        return PAPER_STATIC_CONTEXT.format(description=self.description)
+        return PAPER_STATIC_CONTEXT.format(context=self.context, description=self.description)
 
 
 class Source(Context):
     @property
     def description(self):
         return """[Task]
-Summarize the SymbolicAI framework to use it as a conditioning context for a large Language model like GPT-3.
-Do not create any sections or subsections. Only write a coherent text about the framework.
+Summarize the referenced method to use it as a conditioning context for a large Language model like GPT-3.
+Do not create any sections or subsections. Only write a coherent text about the main principles and concepts of the method.
 """
 
 class Method(Context):

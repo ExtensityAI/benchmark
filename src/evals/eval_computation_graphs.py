@@ -11,6 +11,7 @@ from symai.utils import toggle_test
 from symai.components import Choice, Extract, Sequence, FileReader, RuntimeExpression, PrepareData, ExpressionBuilder
 from symai.extended.seo_query_optimizer import SEOQueryOptimizer
 from symai.extended.os_command import OSCommand
+from symai.components import GraphViz
 
 
 ACTIVE = False
@@ -102,7 +103,8 @@ class AppendFunction(Expression):
         super().__init__(**kwargs)
         self.sequence  = sequence
         self.functions = FUNCTIONS
-        self.desc_func = Function('Create a description for the custom expression.', static_context="""[Description]
+        self.desc_func = Function('Create a description for the custom expression.',
+                                  static_context="""[Description]
 Write a short and simple description in the format >>>[ ... name ... ]\n... text ...\n<<<. The description should be one or two sentence long, include a description of the expression purpose and offer one specific example how to use the expression.
 
 [Additional Expression Information]
@@ -438,9 +440,12 @@ def test_sub_routine_create_paper():
         Abstract(),
         Title(),
     )
-    #paper = expr(task, preview=True) # simulate the paper creation process
-    paper = expr(task)
+    paper = expr(task, preview=True) # simulate the paper creation process
+    #paper = expr(task)
     res   = solution.similarity(str(paper))
+
+    # visualize the computation graph
+    GraphViz()(expr, 'results/paper.html')
 
     return res, {'scores': [res]}
 
