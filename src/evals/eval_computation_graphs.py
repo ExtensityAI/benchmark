@@ -249,7 +249,7 @@ class Evaluate(Expression):
         # TODO: ...
 
 
-class Agent(Expression):
+class Evaluation(Expression):
     def __init__(self, halt_threshold: float = 0.85,
                  max_iterations: int = 1,
                  scheduler = SequentialScheduler,
@@ -304,7 +304,7 @@ class Agent(Expression):
                     result = None
                     self.memory.append(f"ERROR: {func.__class__} raised an exception. {task}")
                 # Evaluate the result of the program.
-                self.eval(task, result, self.memory)
+                self.eval(task, test, result, self.memory)
                 # update the similarity
                 sim        = Symbol(result).similarity(self.target)
                 # increment the iteration counter
@@ -315,7 +315,7 @@ class Agent(Expression):
 
 @toggle_test(ACTIVE, default=MOCK_RETURN)
 def test_program():
-    expr   = Agent()
+    expr   = Evaluation()
     reader = FileReader()
     cur_file_dir = os.path.dirname(os.path.abspath(__file__))
     target = reader(os.path.join(cur_file_dir, 'snippets/richard_feynman_summary.txt'))
@@ -421,8 +421,8 @@ def test_sub_routine_os_commands():
 def test_sub_routine_create_paper():
     # define the task
     reader   = FileReader()
-    solution = reader('src/evals/snippets/paper/reference_section_introduction.txt')
-    task     = Symbol("Write a paper about the SymbolicAI framework from GitHub https://github.com/ExtensityAI/symbolicai. Include citations and references from the papers directory ./snippets/papers.")
+    solution = reader('src/evals/snippets/paper/reference_section_relatedwork.txt')
+    task     = Symbol("[Objective]\nWrite a paper about the SymbolicAI framework. Include citations and references from the referenced papers. Follow primarily the [Task] instructions.")
     # choose the correct function context
     expr     = Paper(
         Method(
@@ -438,7 +438,18 @@ def test_sub_routine_create_paper():
         Abstract(),
         Title(),
     )
+    #paper = expr(task, preview=True) # simulate the paper creation process
     paper = expr(task)
-    res   = solution.similarity(paper)
+    res   = solution.similarity(str(paper))
 
     return res, {'scores': [res]}
+
+
+@toggle_test(False, default=MOCK_RETURN)
+def test_cite_paper():
+    # define the task
+    reader   = FileReader()
+    solution = reader('src/evals/snippets/paper/reference_section_relatedwork.txt')
+    res      = Cite(file_link='src/evals/snippets/bib/related_work/laird87.txt')
+    sim      = solution.similarity(res)
+    return sim, {'scores': [sim]}

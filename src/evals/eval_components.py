@@ -18,7 +18,7 @@ ACTIVE = True
 cur_file_dir = os.path.dirname(os.path.abspath(__file__))
 
 
-LOGIC_FACTORIZATION_CONTEXT = """[Context]
+HOL_FACTORIZATION_CONTEXT = """[Context]
 Factorize a given linguistic expression by creating logical components that transform the statement into compositional SAT statement.
 
 [Boolean Operations]
@@ -72,10 +72,10 @@ Factorize the following expression:
 """
 
 
-class LogicFactorization(Function):
+class HOLFactorization(Function):
     @property
     def static_context(self):
-        return LOGIC_FACTORIZATION_CONTEXT
+        return HOL_FACTORIZATION_CONTEXT
 
 
 @toggle_test(ACTIVE, default=MOCK_RETURN)
@@ -140,7 +140,7 @@ ParentOf(x, y) <- IS(x, parent) AND IS(y, child);
 """
     val  = "Bob has two sons, John and Jay. Jay has one brother and father. The father has two sons. Jay's brother has a brother and a father. Who is Jay's brother."
     scoring     = []
-    expr        = LogicFactorization(val, post_processors=[StripPostProcessor(), CodeExtractPostProcessor()])
+    expr        = HOLFactorization(val, post_processors=[StripPostProcessor(), CodeExtractPostProcessor()])
     res         = expr(val)
     sol1        = Symbol(solution1)
     sol2        = Symbol(solution2)
