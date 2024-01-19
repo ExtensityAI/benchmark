@@ -11,11 +11,13 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Run the benchmark.')
     parser.add_argument('--context_associations', action='store_true', help='Run the in-context associations benchmark.')
     parser.add_argument('--multimodal_bindings', action='store_true', help='Run the multimodal bindings benchmark.')
-    parser.add_argument('--program_synthesis', action='store_true', help='Run the program synthesis benchmark.')
-    parser.add_argument('--components', action='store_true', help='Run the components benchmark.')
-    parser.add_argument('--computation_graphs', action='store_true', help='Run the computation graphs benchmark.')
-    parser.add_argument('--all', action='store_true', help='Run all benchmarks.')
-    parser.add_argument('--dummy', action='store_true', help='Run the dummy benchmark.')
+    parser.add_argument('--program_synthesis',   action='store_true', help='Run the program synthesis benchmark.')
+    parser.add_argument('--logic_components',    action='store_true', help='Run the logic components benchmark.')
+    parser.add_argument('--computation_graphs',  action='store_true', help='Run the computation graphs benchmark.')
+    parser.add_argument('--all',    action='store_true', help='Run all benchmarks.')
+    parser.add_argument('--dummy',  action='store_true', help='Run the dummy benchmark.')
+    parser.add_argument('--models', help='Run the specified models.', default=['all'], type=str, nargs='+')
+    parser.add_argument('--seeds',  help='Run the specified seeds.',  default=['all'], type=int, nargs='+')
     return parser.parse_args()
 
 
@@ -105,7 +107,7 @@ def create_latex_result(data):
         benchmark_in_context_association_row=benchmark_rows[BENCHMARK_NAME_MAPPING['eval_in_context_associations']],
         benchmark_multimodality_row=benchmark_rows[BENCHMARK_NAME_MAPPING['eval_multimodal_bindings']],
         benchmark_program_synthesis_row=benchmark_rows[BENCHMARK_NAME_MAPPING['eval_program_synthesis']],
-        benchmark_components_row=benchmark_rows[BENCHMARK_NAME_MAPPING['eval_components']],
+        benchmark_components_row=benchmark_rows[BENCHMARK_NAME_MAPPING['eval_logic_components']],
         benchmark_computation_graphs_row=benchmark_rows[BENCHMARK_NAME_MAPPING['eval_computation_graphs']],
         total_row='Total' + total_values
     )

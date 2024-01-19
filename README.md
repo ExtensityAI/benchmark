@@ -35,7 +35,7 @@ sympkg i ExtensityAI/embeddings
 Run the full benchmark.
 
 ```bash
-python test.py --context_associations --program_synthesis --multimodal_bindings --components --computation_graphs
+python test.py --context_associations --program_synthesis --multimodal_bindings --logic_components --computation_graphs
 ```
 
 This will run all the evaluations in the benchmark.

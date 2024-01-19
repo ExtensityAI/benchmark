@@ -22,7 +22,7 @@ def create_latex_result(data):
         benchmark_in_context_association_row=benchmarkrows[BENCHMARK_NAME_MAPPING['eval_in_context_associations']],
         benchmark_multimodality_row=benchmarkrows[BENCHMARK_NAME_MAPPING['eval_multimodal_bindings']],
         benchmark_program_synthesis_row=benchmarkrows[BENCHMARK_NAME_MAPPING['eval_program_synthesis']],
-        benchmark_components_row=benchmarkrows[BENCHMARK_NAME_MAPPING['eval_components']],
+        benchmark_components_row=benchmarkrows[BENCHMARK_NAME_MAPPING['eval_logic_components']],
         benchmark_computation_graphs_row=benchmarkrows[BENCHMARK_NAME_MAPPING['eval_computation_graphs']],
         total_row='Total' + total_values
     )

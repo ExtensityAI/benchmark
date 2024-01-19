@@ -15,7 +15,7 @@ from src.utils import MOCK_RETURN, RANDOM_SEQUENCE, normalize
 
 from z3 import Solver, sat
 
-ACTIVE = False
+ACTIVE = True
 
 cur_file_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -208,7 +208,7 @@ The implementation must be a SAT solvable solution and follow the user problem r
 
     return True, {'scores': scoring}
 
-@toggle_test(True, default=MOCK_RETURN)
+@toggle_test(ACTIVE, default=MOCK_RETURN)
 def test_solve_puzzle():
     scoring  = []
     reader   = FileReader()

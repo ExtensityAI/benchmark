@@ -440,9 +440,9 @@ def test_sub_routine_create_paper():
         Abstract(),
         Title(),
     )
-    paper = expr(task, preview=True) # simulate the paper creation process
-    #paper = expr(task)
-    res   = solution.similarity(str(paper))
+    paper   = expr(task, preview=True) # simulate the paper creation process
+    results = expr._metadata._expr_results
+    res     = solution.similarity(str(paper))
 
     # visualize the computation graph
     GraphViz()(expr, 'results/paper.html')
@@ -450,7 +450,7 @@ def test_sub_routine_create_paper():
     return res, {'scores': [res]}
 
 
-@toggle_test(False, default=MOCK_RETURN)
+@toggle_test(SUB_ROUTINE_ACTIVE, default=MOCK_RETURN)
 def test_cite_paper():
     # define the task
     reader   = FileReader()

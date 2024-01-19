@@ -20,7 +20,7 @@ from src.engines.engine_google_vertex import GoogleGeminiEngine
 from src.evals import eval_in_context_associations
 from src.evals import eval_multimodal_bindings
 from src.evals import eval_program_synthesis
-from src.evals import eval_components
+from src.evals import eval_logic_components
 from src.evals import eval_computation_graphs
 
 
@@ -28,7 +28,7 @@ BENCHMARK_NAME_MAPPING = {
     'eval_in_context_associations': 'Associations',
     'eval_multimodal_bindings': 'Modality',
     'eval_program_synthesis': 'Code',
-    'eval_components': 'Components',
+    'eval_logic_components': 'Logic',
     'eval_computation_graphs': 'Graphs'
 }
 
@@ -48,42 +48,42 @@ DUMMY_DATA = {
         f"{BENCHMARK_NAME_MAPPING['eval_in_context_associations']}": {"performance": 0.8},
         f"{BENCHMARK_NAME_MAPPING['eval_multimodal_bindings']}": {"performance": 0.6},
         f"{BENCHMARK_NAME_MAPPING['eval_program_synthesis']}": {"performance": 0.7},
-        f"{BENCHMARK_NAME_MAPPING['eval_components']}": {"performance": 0.67},
+        f"{BENCHMARK_NAME_MAPPING['eval_logic_components']}": {"performance": 0.67},
         f"{BENCHMARK_NAME_MAPPING['eval_computation_graphs']}": {"performance": 0.7}
     },
     f"{MODEL_NAME_MAPPING['gpt4']}": {
         f"{BENCHMARK_NAME_MAPPING['eval_in_context_associations']}": {"performance": 0.95},
         f"{BENCHMARK_NAME_MAPPING['eval_multimodal_bindings']}": {"performance": 0.85},
         f"{BENCHMARK_NAME_MAPPING['eval_program_synthesis']}": {"performance": 0.8},
-        f"{BENCHMARK_NAME_MAPPING['eval_components']}": {"performance": 0.85},
+        f"{BENCHMARK_NAME_MAPPING['eval_logic_components']}": {"performance": 0.85},
         f"{BENCHMARK_NAME_MAPPING['eval_computation_graphs']}": {"performance": 0.9}
     },
     f"{MODEL_NAME_MAPPING['gemini']}": {
         f"{BENCHMARK_NAME_MAPPING['eval_in_context_associations']}": {"performance": 0.9},
         f"{BENCHMARK_NAME_MAPPING['eval_multimodal_bindings']}": {"performance": 0.89},
         f"{BENCHMARK_NAME_MAPPING['eval_program_synthesis']}": {"performance": 0.78},
-        f"{BENCHMARK_NAME_MAPPING['eval_components']}": {"performance": 0.75},
+        f"{BENCHMARK_NAME_MAPPING['eval_logic_components']}": {"performance": 0.75},
         f"{BENCHMARK_NAME_MAPPING['eval_computation_graphs']}": {"performance": 0.7}
     },
     f"{MODEL_NAME_MAPPING['llama']}": {
         f"{BENCHMARK_NAME_MAPPING['eval_in_context_associations']}": {"performance": 0.6},
         f"{BENCHMARK_NAME_MAPPING['eval_multimodal_bindings']}": {"performance": 0.45},
         f"{BENCHMARK_NAME_MAPPING['eval_program_synthesis']}": {"performance": 0.4},
-        f"{BENCHMARK_NAME_MAPPING['eval_components']}": {"performance": 0.3},
+        f"{BENCHMARK_NAME_MAPPING['eval_logic_components']}": {"performance": 0.3},
         f"{BENCHMARK_NAME_MAPPING['eval_computation_graphs']}": {"performance": 0.45}
     },
     f"{MODEL_NAME_MAPPING['mistral']}": {
         f"{BENCHMARK_NAME_MAPPING['eval_in_context_associations']}": {"performance": 0.67},
         f"{BENCHMARK_NAME_MAPPING['eval_multimodal_bindings']}": {"performance": 0.5},
         f"{BENCHMARK_NAME_MAPPING['eval_program_synthesis']}": {"performance": 0.45},
-        f"{BENCHMARK_NAME_MAPPING['eval_components']}": {"performance": 0.4},
+        f"{BENCHMARK_NAME_MAPPING['eval_logic_components']}": {"performance": 0.4},
         f"{BENCHMARK_NAME_MAPPING['eval_computation_graphs']}": {"performance": 0.3}
     },
     f"{MODEL_NAME_MAPPING['zephyr']}": {
         f"{BENCHMARK_NAME_MAPPING['eval_in_context_associations']}": {"performance": 0.7},
         f"{BENCHMARK_NAME_MAPPING['eval_multimodal_bindings']}": {"performance": 0.6},
         f"{BENCHMARK_NAME_MAPPING['eval_program_synthesis']}": {"performance": 0.5},
-        f"{BENCHMARK_NAME_MAPPING['eval_components']}": {"performance": 0.43},
+        f"{BENCHMARK_NAME_MAPPING['eval_logic_components']}": {"performance": 0.43},
         f"{BENCHMARK_NAME_MAPPING['eval_computation_graphs']}": {"performance": 0.36}
     }
 }
@@ -117,14 +117,14 @@ class EvaluateBenchmark(Expression):
     def __init__(self, eval_in_context_associations: Optional[List[Callable]] = None,
                        eval_multimodal_bindings: Optional[List[Callable]] = None,
                        eval_program_synthesis: Optional[List[Callable]] = None,
-                       eval_components: Optional[List[Callable]] = None,
+                       eval_logic_components: Optional[List[Callable]] = None,
                        eval_computation_graphs: Optional[List[Callable]] = None,
                        **kwargs):
         super().__init__(**kwargs)
         self.eval_in_context_associations = eval_in_context_associations
         self.eval_multimodal_bindings = eval_multimodal_bindings
         self.eval_program_synthesis = eval_program_synthesis
-        self.eval_components = eval_components
+        self.eval_logic_components = eval_logic_components
         self.eval_computation_graphs = eval_computation_graphs
         EngineRepository.register('index', VectorDBIndexEngine(index_name='dataindex', index_dims=768, index_top_k=5))
         # Register embeddings engine globally for all Symbols from plugin
@@ -302,8 +302,8 @@ class EvaluateBenchmark(Expression):
             self.evaluate_experiment(experiments, self.eval_program_synthesis, n_runs, seeds, config, results, type='eval_program_synthesis')
 
         # Evaluate components
-        if self.eval_components:
-            self.evaluate_experiment(experiments, self.eval_components, n_runs, seeds, config, results, type='eval_components')
+        if self.eval_logic_components:
+            self.evaluate_experiment(experiments, self.eval_logic_components, n_runs, seeds, config, results, type='eval_logic_components')
 
         # Evaluate computation graphs
         if self.eval_computation_graphs:
@@ -322,7 +322,7 @@ def run(args):
     in_context_associations_tests = load_test_functions(eval_in_context_associations) if args.context_associations or args.all else None
     multimodal_bindings_tests     = load_test_functions(eval_multimodal_bindings) if args.multimodal_bindings or args.all else None
     program_synthesis_tests       = load_test_functions(eval_program_synthesis) if args.program_synthesis or args.all else None
-    components_tests              = load_test_functions(eval_components) if args.components or args.all else None
+    logic_components_tests        = load_test_functions(eval_logic_components) if args.logic_components or args.all else None
     computation_graphs_tests      = load_test_functions(eval_computation_graphs) if args.computation_graphs or args.all else None
 
     # Instantiate benchmarker
@@ -330,16 +330,16 @@ def run(args):
         eval_in_context_associations=in_context_associations_tests,
         eval_multimodal_bindings=multimodal_bindings_tests,
         eval_program_synthesis=program_synthesis_tests,
-        eval_components=components_tests,
+        eval_logic_components=logic_components_tests,
         eval_computation_graphs=computation_graphs_tests
     )
 
     # Run benchmark
-    #benchmark_results = benchmarker(experiments=['gpt4', 'llama', 'gpt3.5', 'zephyr', 'gemini', 'mistral'],
-    benchmark_results = benchmarker(experiments=['gpt4'],
+    seeds  = [42, 18, 97, 3, 200, 32, 815, 6] if not args.seeds else args.seeds
+    models = ['gpt4', 'llama', 'gpt3.5', 'zephyr', 'gemini', 'mistral'] if not args.models else args.models
+    benchmark_results = benchmarker(experiments=models,
                                     n_runs=1,
-                                    #seeds=[42, 18, 97, 3, 200, 32, 815, 6],
-                                    seeds=[42],
+                                    seeds=seeds,
                                     dummy=args.dummy)
 
     # Print benchmark results
