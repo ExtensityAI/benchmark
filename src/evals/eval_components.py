@@ -257,6 +257,8 @@ def test_solve_puzzle():
         solve_puzzle = globals().get("solve_puzzle")
         solution     = solve_puzzle(S)
         validator    = S.check()
+        # created a runnable solution and executed it
+        scoring.append(1.0)
 
         # …and release!
         if validator == sat:
@@ -272,13 +274,16 @@ def test_solve_puzzle():
         else:
             scoring.append(0.0)
     except Exception as e:
+        # not runnable
+        scoring.append(0.0)
+        # not verifiable
         scoring.append(0.0)
 
     # How good?
     random     = Symbol(RANDOM_SEQUENCE)
     rand_score = human_solution.similarity(random, metric='cosine')
     base_score = human_solution.similarity(trajectories.split("\n\n\n"), metric="cosine").mean()
-    score      = human_solution.similarity(code, normalize=normalize(base_score, rand_score), metric='cosine')
+    score      = human_solution.similarity(res, normalize=normalize(base_score, rand_score), metric='cosine')
     scoring.append(score)
 
     return True, {'scores': scoring}

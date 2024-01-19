@@ -1,3 +1,4 @@
+```python
 from z3 import Solver, Function, EnumSort, IntSort, Const, And, sat
 
 # Define the enumerated sort for family members
@@ -24,3 +25,4 @@ if r == sat:
     answer = m[query]
 else:
     answer = "Failed"
+```

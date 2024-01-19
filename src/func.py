@@ -336,10 +336,10 @@ def run(args):
 
     # Run benchmark
     #benchmark_results = benchmarker(experiments=['gpt4', 'llama', 'gpt3.5', 'zephyr', 'gemini', 'mistral'],
-    benchmark_results = benchmarker(experiments=['gpt3.5'],
+    benchmark_results = benchmarker(experiments=['gpt4'],
                                     n_runs=1,
                                     #seeds=[42, 18, 97, 3, 200, 32, 815, 6],
-                                    seeds=[97],
+                                    seeds=[42],
                                     dummy=args.dummy)
 
     # Print benchmark results

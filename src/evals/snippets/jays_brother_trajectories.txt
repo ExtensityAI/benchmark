@@ -1,3 +1,4 @@
+```python
 from z3 import Solver, Int, And, sat
 
 # Define variables to represent the individuals
@@ -33,8 +34,10 @@ if r == sat:
 # Mapping the number back to the name
 name_map = {1: 'Bob', 2: 'John', 3: 'Jay'}
 answer = name_map.get(answer, "Unknown")
+```
 
 
+```python
 from z3 import Solver, Bool, And, Not, sat
 
 # Create a solver instance
@@ -69,8 +72,10 @@ else:
     answer = "Failed!"
 
 # Now, the 'answer' variable should be "John"
+```
 
 
+```python
 from z3 import Solver, Int, And, sat
 
 # Create a new solver instance
@@ -110,3 +115,4 @@ else:
 
 # Assign the answer to the variable as requested
 answer = answer
+```
