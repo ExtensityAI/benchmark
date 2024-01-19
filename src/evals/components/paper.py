@@ -46,7 +46,7 @@ class Paper(Function):
         root_res    = self.root.metadata._expr_results
         # return the reversed results
         reverse_res = str(list(reversed(root_res)))
-        # create
+        # create the final task by concatenating the results
         return super().forward(task | reverse_res, **kwargs)
 
     @property

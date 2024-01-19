@@ -10,7 +10,6 @@ from symai.processor import ProcessorPipeline
 from symai.utils import toggle_test
 
 from src.evals.components import Factorization
-from src.evals.components.sat_solver import LOGIC_TEMPLATE, SATSolver
 from src.utils import MOCK_RETURN, RANDOM_SEQUENCE, normalize
 
 from z3 import Solver, sat
@@ -105,51 +104,22 @@ def test_factorize_formula():
 
 @toggle_test(ACTIVE, default=MOCK_RETURN)
 def test_dsl_writing_capability():
-    # test only the capability to follow instructions from a custom DSL (syntax) + semantic structure
-    solution1 = """
-// Query
-IsBrotherOf(jay, john, bob) <- BrotherOf(jay, john) AND FatherOf(bob, jay) AND FatherOf(bob, john);
+    # test only the capability to follow template instructions from a custom DSL (syntax) + semantic structure
+    reader       = FileReader()
+    dir_path     = Path(__file__).parent.absolute() / "snippets"
+    formulations = reader((dir_path / "jays_brother_trajectories.txt").as_posix())
+    formulation1, formulation2 = formulations.split("\n\n\n")
 
-// Facts
-BrotherOf(x, y) <- HAS(x, brother) AND HAS(y, brother) AND Sibling(x, y);
-FatherOf(x, y) <- HAS(x, son) AND ParentOf(x, y);
-ParentOf(x, y) <- IS(x, parent) AND IS(y, child);
-Sibling(x, y) <- IS(x, father) AND IS(y, father) OR IS(x, mother) AND IS(y, mother);
-
-// Primitive Types
-son: "a male child in relation to his parents";
-father: "a male parent";
-mother: "a female parent";
-brother: "a male sibling";
-parent: "a person's father or mother";
-child: "a young human being below the legal age of majority associated to this person as a parent";
-"""
-
-    solution2 = """
-IsBrotherOf(x, y, z) <- BrotherOf(x, y) AND FatherOf(z, x) AND FatherOf(z, y);
-BrotherOf(x, y) <- Sibling(x, y) AND IS(x, brother) AND IS(y, brother);
-FatherOf(x, y) <- ParentOf(x, y) AND IS(y, son);
-Sibling(x, y) <- CommonParent(x, y);
-CommonParent(x, y) <- (IS(x, father) AND IS(y, father)) OR (IS(x, mother) AND IS(y, mother));
-IS(x, brother) <- TRUE; // Implied by the use of 'x, brother' and 'y, brother'
-IS(y, brother) <- TRUE;
-IS(y, son) <- TRUE;
-IS(x, father): "is x acknowledged as a father of someone?";
-IS(x, mother): "is x acknowledged as a mother of someone?";
-IS(x, parent): "is x acknowledged as a parent of someone?";
-IS(x, child): "is x acknowledged as a child of someone?";
-ParentOf(x, y) <- IS(x, parent) AND IS(y, child);
-"""
     val  = "Bob has two sons, John and Jay. Jay has one brother and father. The father has two sons. Jay's brother has a brother and a father. Who is Jay's brother."
     scoring     = []
     expr        = HOLFactorization(val, post_processors=[StripPostProcessor(), CodeExtractPostProcessor()])
     res         = expr(val)
-    sol1        = Symbol(solution1)
-    sol2        = Symbol(solution2)
-    random      = Symbol(RANDOM_SEQUENCE+val) # remove the chance of simply rephrasing the question
-    rand_score  = random.similarity([sol1, sol2]).mean()
-    base_score  = sol1.similarity(sol2)
-    score       = sol1.similarity(res, normalize=normalize(base_score, rand_score))
+    form1       = Symbol(formulation1)
+    form2       = Symbol(formulation2)
+    random      = Symbol(RANDOM_SEQUENCE) # remove the chance of simply rephrasing the question
+    rand_score  = random.similarity([form1, form2]).mean()
+    base_score  = form1.similarity(form2)
+    score       = form1.similarity(res, normalize=normalize(base_score, rand_score))
     scoring.append(score)
     # check for syntax violations
     if '("' in str(res) or '")' in str(res) or '",' in str(res) or '":' in str(res) or '=' in str(res):
@@ -159,54 +129,6 @@ ParentOf(x, y) <- IS(x, parent) AND IS(y, child);
         scoring.append(1.0)
         return True, {'scores': scoring}
 
-
-def test_solve_puzzle():
-    problem   = """
-The Englishman lives in the red house.
-The Swede keeps dogs.
-The Dane drinks tea.
-The green house is just to the left of the white one.
-The owner of the green house drinks coffee.
-The Pall Mall smoker keeps birds.
-The owner of the yellow house smokes Dunhills.
-The man in the center house drinks milk.
-The Norwegian lives in the first house.
-The Blend smoker has a neighbor who keeps cats.
-The man who smokes Blue Masters drinks bier.
-The man who keeps horses lives next to the Dunhill smoker.
-The German smokes Prince.
-The Norwegian lives next to the blue house.
-The Blend smoker has a neighbor who drinks water.
-The question to be answered is: Who keeps fish?
-"""
-    task      = """[Task]
-Implement the `problem_statement` function that takes in the z3 package `S` solver as input and returns a query constant as output.
-All required imports are already provided. The code of the `problem_statement` function should be written between a
-```python
-...
-```
-code block.
-The `problem_statement` function must be self-contained, fully functional and pass all tests.
-No other functions or explanations are required.
-The implementation must be a SAT solvable solution and follow the user problem requirements:
-
-[Problem Statement]
-%s
-""" % problem
-    conv       = Conversation(init=LOGIC_TEMPLATE, auto_print=False)
-    res        = conv(task)
-    scoring    = []
-    processors = ProcessorPipeline([StripPostProcessor(), CodeExtractPostProcessor()])
-    code       = Symbol(processors(str(res), None))
-    reader     = FileReader()
-    solution   = reader(os.path.join(cur_file_dir, 'snippets/einstein_puzzle_logic_solution.txt'))
-    sim        = solution.similarity(res)
-    scoring.append(sim)
-    solver     = SATSolver()
-    solver     = solver(code, lambda: 'German')
-    scoring.append(1.0 if solver else 0.0)
-
-    return True, {'scores': scoring}
 
 @toggle_test(ACTIVE, default=MOCK_RETURN)
 def test_solve_puzzle():
@@ -251,6 +173,7 @@ def test_solve_puzzle():
             code,
             globals()
         )
+        # see also Expression: symai.extended import SATSolver
 
         # Tension…
         S = Solver()

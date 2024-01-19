@@ -21,7 +21,9 @@
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [
-                "--context_associations"
+                "--context_associations",
+                "--models", "gpt3.5",
+                "--seeds", "42"
             ]
         },
         {
@@ -32,7 +34,9 @@
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [
-                "--multimodal_bindings"
+                "--multimodal_bindings",
+                "--models", "gpt3.5",
+                "--seeds", "42"
             ]
         },
         {
@@ -43,18 +47,22 @@
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [
-                "--program_synthesis"
+                "--program_synthesis",
+                "--models", "gpt3.5",
+                "--seeds", "42"
             ]
         },
         {
-            "name": "Run Components",
+            "name": "Run Logic Components",
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}/test.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [
-                "--components"
+                "--logic_components",
+                "--models", "gpt3.5",
+                "--seeds", "42"
             ]
         },
         {
@@ -65,7 +73,9 @@
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [
-                "--computation_graphs"
+                "--computation_graphs",
+                "--models", "gpt3.5",
+                "--seeds", "42"
             ]
         },
         {
@@ -79,7 +89,7 @@
                 "--context_associations",
                 "--program_synthesis",
                 "--multimodal_bindings",
-                "--components",
+                "--logic_components",
                 "--computation_graphs"
             ]
         },

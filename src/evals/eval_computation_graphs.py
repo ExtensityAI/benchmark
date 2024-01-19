@@ -441,11 +441,13 @@ def test_sub_routine_create_paper():
         Title(),
     )
     paper   = expr(task, preview=True) # simulate the paper creation process
-    results = expr._metadata._expr_results
+    results = expr.root_results
     res     = solution.similarity(str(paper))
 
     # visualize the computation graph
     GraphViz()(expr, 'results/paper.html')
+    # visualize the computation graph
+    GraphViz()(results[-1], 'results/results.html')
 
     return res, {'scores': [res]}
 
