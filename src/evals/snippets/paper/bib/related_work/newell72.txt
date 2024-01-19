@@ -1,0 +1,11 @@
+The aim of this book is to advance our understanding of how humans think.
+It seeks to do so by putting forth a theory of human problem solving, along with a body of empirical evidence that permits assessment of the theory.
+No single work advances understanding very far. The aims of a scientific work are limited by the formal character of the theory, by the phenomena it encompasses, by the experimental situations it uses, by the types of subjects it studies, and by the data it gathers. Of course, a theory may speak beyond its initial base-all scientists hope for just that. But science is a series of successive approx-imations. Not all things can be done at once, and even if one aspires to go far, he must start somewhere. If one aims at covering all of human thinking in a single work, the work will necessarily be superficial. If one aims at probing in depth, then many aspects of the subject, however important, will be left untouched.
+
+@article{Newell:72,
+    title = {Human problem solving.},
+    author = {A. Newell and H. A. Simon},
+    journal = {Prentice-Hall},
+    pages = {920},
+    year = {1972}
+}

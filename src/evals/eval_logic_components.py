@@ -1,12 +1,10 @@
-import os
 from pathlib import Path
 
 import sympy as sym
-from symai import Conversation, Expression, Function, Symbol
+from symai import Conversation, Function, Symbol
 from symai.components import FileReader
 from symai.extended import Conversation
 from symai.post_processors import CodeExtractPostProcessor, StripPostProcessor
-from symai.processor import ProcessorPipeline
 from symai.utils import toggle_test
 
 from src.evals.components import Factorization
@@ -15,8 +13,6 @@ from src.utils import MOCK_RETURN, RANDOM_SEQUENCE, normalize
 from z3 import Solver, sat
 
 ACTIVE = True
-
-cur_file_dir = os.path.dirname(os.path.abspath(__file__))
 
 
 HOL_FACTORIZATION_CONTEXT = """[Context]

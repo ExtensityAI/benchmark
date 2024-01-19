@@ -49,19 +49,6 @@ Output:
 <class 'symai.expressions.Symbol'>(value=Willkommen zu unserem Tutorial.)
 ```
 
-### Ranking Objects
-
-Our API can also execute basic data-agnostic operations like `filter`, `rank`, or `extract` patterns. For instance, we can rank a list of numbers:
-
-```python
-sym = ai.Symbol(numpy.array([1, 2, 3, 4, 5, 6, 7]))
-res = sym.rank(measure='numerical', order='descending')
-```
-```bash
-Output:
-<class 'symai.expressions.Symbol'>(value=['7', '6', '5', '4', '3', '2', '1'])
-```
-
 ### Evaluating Expressions by Best Effort
 
 Evaluations are resolved in the language domain and by best effort. We showcase this on the example of [word2vec](https://arxiv.org/abs/1301.3781).
@@ -81,3 +68,55 @@ ai.Symbol('King - Man + Women').expression()
 Output:
 <class 'symai.expressions.Symbol'>(value=Queen)
 ```
+
+In the next section, we will explore operations.
+
+## Operations
+
+Operations form the core of our framework and serve as the building blocks of our API. These operations define the behavior of symbols by acting as contextualized functions that accept a `Symbol` object and send it to the neuro-symbolic engine for evaluation. Operations then return one or multiple new objects, which primarily consist of new symbols but may include other types as well. Polymorphism plays a crucial role in operations, allowing them to be applied to various data types such as strings, integers, floats, and lists, with different behaviors based on the object instance.
+
+Operations are executed using the `Symbol` object's `value` attribute, which contains the original data type converted into a string representation and sent to the engine for processing. As a result, all values are represented as strings, requiring custom objects to define a suitable `__str__` method for conversion while preserving the object's semantics.
+
+Inheritance is another essential aspect of our API, which is built on the `Symbol` class as its base. All operations are inherited from this class, offering an easy way to add custom operations by subclassing `Symbol` while maintaining access to basic operations without complicated syntax or redundant functionality. Subclassing the `Symbol` class allows for the creation of contextualized operations with unique constraints and prompt designs by simply overriding the relevant methods. However, it is recommended to subclass the `Expression` class for additional functionality.
+
+Basic operations in `Symbol` are implemented by defining local functions and decorating them with corresponding operation decorators from the `symai/core.py` file, a collection of predefined operation decorators that can be applied rapidly to any function. Using local functions instead of decorating main methods directly avoids unnecessary communication with the neural engine and allows for default behavior implementation. It also helps cast operation return types to symbols or derived classes, using the `self.sym_return_type(...)` method for contextualized behavior based on the determined return type. More details can be found in the [`Symbol` class](https://github.com/ExtensityAI/symbolicai/blob/main/symai/symbol.py).
+
+The following section demonstrates that most operations in `symai/core.py` are derived from the more general `few_shot` decorator.
+
+### Few-Shot Operations
+
+The `@ai.few_shot` decorator is a generalized version of the `@ai.zero_shot` decorator, used to define custom operations that require demonstration examples. To provide a clearer understanding, we present the function signature of the `few_shot` decorator:
+
+```python
+def few_shot(prompt: str,
+             examples: Prompt,
+             constraints: List[Callable] = [],
+             default: Optional[object] = None,
+             limit: int = 1,
+             pre_processors: Optional[List[PreProcessor]] = None,
+             post_processors: Optional[List[PostProcessor]] = None,
+             **decorator_kwargs):
+```
+
+The `prompt` and `constraints` attributes behave similarly to those in the `zero_shot` decorator. The `examples` and `limit` arguments are new. The `examples` argument defines a list of demonstrations used to condition the neural computation engine, while the `limit` argument specifies the maximum number of examples returned, given that there are more results. The `pre_processors` argument accepts a list of `PreProcessor` objects for pre-processing input before it's fed into the neural computation engine. The `post_processors` argument accepts a list of `PostProcessor` objects for post-processing output before returning it to the user. Lastly, the `decorator_kwargs` argument passes additional arguments from the decorator kwargs, which are streamlined towards the neural computation engine and other engines.
+
+To provide a more comprehensive understanding of our conceptual implementation, refer to the flow diagram below, containing the most important classes:
+
+The colors indicate logical groups of data processing steps. `Yellow` represents input and output data, `blue` shows places where one can customize or prepare the input of the engine, `green` indicates post-processing steps of the engine response, `red` displays the application of constraints (including attempted casting of the `return type signature` if specified in the decorated method), and `grey` denotes the custom method defining all properties, thus having access to all the previously mentioned objects.
+
+To conclude this section, here is an example of how to write a custom Japanese name generator using our `@ai.zero_shot` decorator:
+
+```python
+import symai as ai
+class Demo(ai.Symbol):
+    @ai.few_shot(prompt="Generate Japanese names: ",
+                 examples=ai.Prompt(
+                   ["愛子", "和花", "一郎", "和枝"]
+                 ),
+                 limit=2,
+                 constraints=[lambda x: len(x) > 1])
+    def generate_japanese_names(self) -> list:
+        return ['愛子', '和花'] # dummy implementation
+```
+
+If the neural computation engine cannot compute the desired outcome, it will revert to the `default` implementation or default value. If no default implementation or value is found, the method call will raise an exception.

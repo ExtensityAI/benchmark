@@ -1,2 +1,0 @@
->1.[TASK]: Write the SymbolicAI method section of the paper.
->>1.1.[SUBTASK]: Create a query for the

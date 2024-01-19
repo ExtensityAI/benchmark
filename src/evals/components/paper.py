@@ -41,17 +41,17 @@ class Paper(Function):
 
     def forward(self, task, **kwargs):
         # execute the sequence of tasks
-        self.sequence(task, **kwargs)
+        res         = self.sequence(task, **kwargs)
         # access results from the global root node metadata
-        root_res    = self.root.metadata._expr_results
+        results     = self.linker.results
         # return the reversed results
-        reverse_res = str(list(reversed(root_res)))
+        reverse_res = str(list(reversed(list(results.values()))))
         # create the final task by concatenating the results
-        return super().forward(task | reverse_res, **kwargs)
+        return super().forward(task | reverse_res | res, **kwargs)
 
     @property
     def static_context(self):
-        return PAPER_STATIC_CONTEXT.format(context=self.context, description='The paper must include a title, abstract, introduction and related work and method sections.')
+        return PAPER_STATIC_CONTEXT.format(context=self.context, description='The final paper must include the title an abstract and a related work section and method section.')
 
 
 class Context(Conversation):
@@ -82,7 +82,7 @@ class Source(Context):
     def description(self):
         return """[Task]
 Summarize the referenced method to use it as a conditioning context for a large Language model like GPT-3.
-Do not create any sections or subsections. Only write a coherent text about the main principles and concepts of the method.
+Do not create any sections or subsections. Only write one coherent text about the main principles and concepts of the method.
 """
 
 class Method(Context):
@@ -99,7 +99,7 @@ class Method(Context):
     @property
     def description(self):
         return """[Task]
-Your goal is to write the method section which describes the main approach and used principles.
+Your goal is to write the method section which describes the main approach and principles used. Add one methodology section with one consistent paragraph. Provide citations and references.
 """
 
 
@@ -107,14 +107,14 @@ class Cite(Source):
     @property
     def description(self):
         return """[Task]
-Write a short two sentence related work summary in the context of the paper.
+Write a short two sentence related work summary in the context of the paper. Do not add any sections or subsections.
 """
 
 
 class RelatedWork(Context):
     def __init__(self, *citations, **kwargs):
         super().__init__(**kwargs)
-        self.citations = Parallel(*citations, sequential=True)
+        self.citations = Parallel(*citations, sequential=True) # to avoid API rate limits process parallel citations sequentially
 
     def forward(self, task, **kwargs):
         # execute the parallel tasks
@@ -124,7 +124,7 @@ class RelatedWork(Context):
     @property
     def description(self):
         return """[Task]
-Write a coherent related work section in the context of the paper and based on the provided citation sources.
+Write a coherent related work section in the context of the paper and based on the provided citation sources. Add one related work section with one consistent paragraph. Provide citations and references.
 """
 
 
@@ -141,7 +141,7 @@ class Introduction(Context):
     @property
     def description(self):
         return """[Task]
-Write a coherent related work section in the context of the paper and based on the provided citation sources.
+Write a coherent introduction section in the context of the paper and based on the provided context. Add one introduction section with one consistent paragraph. Provide citations and references.
 """
 
 
@@ -149,7 +149,7 @@ class Abstract(Context):
     @property
     def description(self):
         return """[Task]
-Write an abstract for the paper.
+Write the paper abstract given the provided context. Add one abstract section with one consistent paragraph.
 """
 
 
@@ -157,5 +157,5 @@ class Title(Context):
     @property
     def description(self):
         return """[Task]
-Write a title for the paper.
+Write the paper title given the provided context. Add one title tag for the document.
 """

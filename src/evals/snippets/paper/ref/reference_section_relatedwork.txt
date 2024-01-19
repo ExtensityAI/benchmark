@@ -1,6 +1,5 @@
 \section{Related Work}
 
-\paragraph{Symbolic Methods}
 The field of symbolic AI has its foundations in the works of the Logic Theorist (LT) \citep{Newell:56} and the General Problem Solver (GPS) \citep{Newell:57}.
 These programs represented the first steps in automated reasoning and problem-solving using symbolic representations.
 Despite their advancements, both faced challenges in dealing with the complexity of real-world problems, particularly due to combinatorial explosion.

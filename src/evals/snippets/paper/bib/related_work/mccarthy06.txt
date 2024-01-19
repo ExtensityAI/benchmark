@@ -16,3 +16,14 @@ A number of types of "abstraction" can be distinctly defined and several others 
 A direct attempt to classify these and to describe machine methods of forming abstractions from sensory and other data would seem worthwhile.
 7. Randomness and Creativity
 A fairly attractive and yet clearly incomplete conjecture is that the difference between creative thinking and unimaginative competent thinking lies in the injection of a some randomness. The randomness must be guided by intuition to be efficient. In other words, the educated guess or the hunch include controlled randomness in otherwise orderly thinking.
+
+
+@article{McCarthy:06,
+  title={A proposal for the Dartmouth summer research project on artificial intelligence, August 31, 1955},
+  author={J. McCarthy and M. L. Minsky and N. Rochester and C. E. Shannon},
+  year={2006},
+  journal={AI magazine},
+  volume={27},
+  number={4},
+  pages={12--12}
+}

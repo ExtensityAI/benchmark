@@ -1,5 +1,6 @@
 import os
 
+from pathlib import Path
 from datetime import datetime
 from ast import List
 
@@ -382,7 +383,7 @@ def test_sub_routine_web_crawler():
     return res, {'scores': [float(res)]}
 
 
-@toggle_test(True, default=MOCK_RETURN)
+@toggle_test(SUB_ROUTINE_ACTIVE, default=MOCK_RETURN)
 def test_sub_routine_paper_indexer():
     # define the task
     task   = "Explain the central concepts in programming language theory used in SymbolicAI using the indexed papers."
@@ -423,25 +424,37 @@ def test_sub_routine_os_commands():
 def test_sub_routine_create_paper():
     # define the task
     reader   = FileReader()
-    solution = reader('src/evals/snippets/paper/reference_section_relatedwork.txt')
+    dir_path = Path(__file__).parent.absolute() / "snippets"
+    solution = map(reader, [(dir_path / "paper/reference_section_relatedwork.txt").as_posix(),
+                            (dir_path / "paper/reference_section_relatedwork.txt").as_posix(),
+                            (dir_path / "paper/reference_section_relatedwork.txt").as_posix(),
+                            (dir_path / "paper/reference_section_relatedwork.txt").as_posix(),
+                            ])
     task     = Symbol("[Objective]\nWrite a paper about the SymbolicAI framework. Include citations and references from the referenced papers. Follow primarily the [Task] instructions.")
+    expected = [
+
+    ]
     # choose the correct function context
     expr     = Paper(
         Method(
-            Source(file_link='src/evals/snippets/assets/symbolicai_docs.txt'),
+            Source(file_link=(dir_path / "paper/method/symbolicai_docs.txt").as_posix()),
         ),
         RelatedWork(
-            Cite(file_link='src/evals/snippets/bib/related_work/laird87.txt'),
-            Cite(file_link='src/evals/snippets/bib/related_work/mccarthy06.txt'),
-            Cite(file_link='src/evals/snippets/bib/related_work/newell56.txt'),
-            Cite(file_link='src/evals/snippets/bib/related_work/newell57.txt'),
-            Cite(file_link='src/evals/snippets/bib/related_work/newell72.txt'),
+            Cite(file_link=(dir_path / "paper/bib/related_work/newell56.txt").as_posix()),
+            Cite(file_link=(dir_path / "paper/bib/related_work/newell57.txt").as_posix()),
+            Cite(file_link=(dir_path / "paper/bib/related_work/laird87.txt").as_posix()),
+            Cite(file_link=(dir_path / "paper/bib/related_work/newell72.txt").as_posix()),
+            Cite(file_link=(dir_path / "paper/bib/related_work/mccarthy06.txt").as_posix()),
         ),
         Abstract(),
         Title(),
     )
     paper   = expr(task, preview=True) # simulate the paper creation process
-    results = expr.root_results
+    results = expr.linker.results
+
+    # validate intermediate results
+
+
     res     = solution.similarity(str(paper))
 
     # visualize the computation graph

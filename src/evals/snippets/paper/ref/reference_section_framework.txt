@@ -2,8 +2,6 @@
 
 In this section, we discuss the design choices pertaining to implementation and the specifics of the framework we've employed.
 
-\paragraph{Types and Representations}
-
 Analogous to the Python \texttt{object} type, the base type of SymbolicAI is a symbol, and is represented through its name equivalent base type \texttt{Symbol}.
 A \texttt{Symbol} object marks a non-reducible atomic unit.
 All other sub-types, such as \texttt{Expression} and its derivatives, are analogous to their mathematical namesakes, representing expressions or units that can be further evaluated and simplified.
