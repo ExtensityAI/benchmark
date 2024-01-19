@@ -257,10 +257,10 @@ def test_solve_puzzle():
         solve_puzzle = globals().get("solve_puzzle")
         solution     = solve_puzzle(S)
         validator    = S.check()
-        # created a runnable solution and executed it
+        # Some reward for being capable of writing executable code…
         scoring.append(1.0)
 
-        # …and release!
+        # …but did you get it right?
         if validator == sat:
             model = S.model()
             answer = model[solution]

@@ -1,118 +1,86 @@
 ```python
-from z3 import Solver, Int, And, sat
+from z3 import Int, Solver, And, Const, IntSort, EnumSort, Function
 
-# Define variables to represent the individuals
-# Bob = 1, John = 2, Jay = 3, Jay's brother = 4, Father = 5
-Bob, John, Jay, JaysBrother, Father = Int('Bob'), Int('John'), Int('Jay'), Int('JaysBrother'), Int('Father')
+def solve_puzzle(S: Solver) -> Const:
+    # Define the enumeration sort for the individuals
+    Person, (BobE, JohnE, JayE, JaysBrotherE, FatherE) = EnumSort('Person', ['Bob', 'John', 'Jay', 'JaysBrother', 'Father'])
 
-# Initialize the solver
-S = Solver()
+    # Define a function from integers to persons
+    identity = Function('identity', IntSort(), Person)
 
-# Bob is the father and has two sons, John and Jay
-S.add(Bob == 1)
-S.add(Father == 1)
-S.add(John == 2)
-S.add(Jay == 3)
+    # Define integer variables to represent the identities of the individuals
+    Bob, John, Jay, JaysBrother, Father = Int('Bob'), Int('John'), Int('Jay'), Int('JaysBrother'), Int('Father')
 
-# Jay has one brother (John) and one father (Bob)
-S.add(JaysBrother == John)
+    # Add puzzle constraints
+    S.add(identity(1) == BobE, identity(2) == JohnE, identity(3) == JayE)
+    S.add(Bob == 1, Father == 1, John == 2, Jay == 3, JaysBrother == John)
+    S.add(And(Father == Bob, John != Jay, Jay != Father))
+    S.add(And(JaysBrother == John, Jay != Father, Father == Bob))
 
-# The father (Bob) has two sons (John and Jay)
-S.add(And(Father == Bob, John != Jay))
+    # Create a new constant of Person sort and equate it to JaysBrother enumeration
+    query = Const("query", Person)
+    S.add(query == identity(JaysBrother))
 
-# Jay's brother (John) has a brother (Jay) and a father (Bob)
-S.add(And(JaysBrother == John, Jay != Father, Father == Bob))
-
-# Check the constraints and return the brother
-r = S.check()
-answer = None
-if r == sat:
-    m = S.model()
-    answer = m.eval(JaysBrother).as_long()
-
-# 'answer' contains the number representing Jay's brother
-# Mapping the number back to the name
-name_map = {1: 'Bob', 2: 'John', 3: 'Jay'}
-answer = name_map.get(answer, "Unknown")
+    return query
 ```
 
 
 ```python
-from z3 import Solver, Bool, And, Not, sat
+from z3 import Solver, Bool, And, Not, Const, BoolSort, EnumSort, Function, IntSort
 
-# Create a solver instance
-S = Solver()
+def solve_puzzle(S: Solver) -> Const:
+    # Define the enumeration sort for the individuals
+    Person, (BobE, JohnE, JayE, JaysBrotherE, FatherE) = EnumSort('Person', ['Bob', 'John', 'Jay', 'JaysBrother', 'Father'])
 
-# Create boolean variables representing whether John and Jay are brothers
-is_john_brother = Bool('is_john_brother')
-is_jay_brother = Bool('is_jay_brother')
+    # Define a function from boolean to persons (for brother status)
+    is_brother = Function('is_brother', Person, BoolSort())
 
-# Bob has two sons, John and Jay, so both conditions should be true
-bob_has_two_sons = And(is_john_brother, is_jay_brother)
+    # Define the relationships
+    S.add(is_brother(JohnE) == True)  # John is a brother
+    S.add(is_brother(JayE) == True)   # Jay is a brother
 
-# Jay has one brother and father, so John must be the brother
-jay_has_one_brother = is_john_brother
+    # Bob has two sons, John and Jay
+    S.add(And(is_brother(JohnE), is_brother(JayE)))
 
-# Jay's brother has a brother and a father, so Jay must be the brother of his brother (John)
-jay_brother_has_brother = is_jay_brother
+    # Jay has one brother, and John must be the brother
+    S.add(is_brother(JayE) == is_brother(JohnE))
 
-# Adding constraints to the solver
-S.add(bob_has_two_sons)
-S.add(jay_has_one_brother)
-S.add(jay_brother_has_brother)
+    # Jay's brother (John) has a brother (Jay) and a father
+    S.add(And(is_brother(JaysBrotherE), JaysBrotherE != FatherE))
 
-# Let's check if the model is satisfiable
-r = S.check()
-if r == sat:
-    m = S.model()
-    # Since we already know from the puzzle that John is Jay's brother
-    # We just confirm that the model reflects reality
-    answer = "John" if m.evaluate(is_john_brother) else "Unknown"
-else:
-    answer = "Failed!"
+    # Create a new constant of Person sort to represent JaysBrother
+    query = Const("query", Person)
+    S.add(query == JohnE)  # John is Jay's brother
 
-# Now, the 'answer' variable should be "John"
+    return query
 ```
 
 
 ```python
-from z3 import Solver, Int, And, sat
+from z3 import Solver, Const, EnumSort, Function, IntSort
 
-# Create a new solver instance
-s = Solver()
+def solve_puzzle(S: Solver) -> Const:
+    # Define the enumeration sort for the individuals
+    Person, (BobE, JohnE, JayE, JaysBrotherE, FatherE) = EnumSort('Person', ['Bob', 'John', 'Jay', 'JaysBrother', 'Father'])
 
-# Variables representing the count of sons
-Bob_sons = Int('Bob_sons')
-John_sons = Int('John_sons')
-Jay_sons = Int('Jay_sons')
-Jay_brother_sons = Int('Jay_brother_sons')
+    # Define a function from persons to the count of their sons
+    sons_count = Function('sons_count', Person, IntSort())
 
-# Add constraints based on the problem statement
-# Bob has two sons
-s.add(Bob_sons == 2)
+    # Add constraints based on the problem statement
+    # Bob has two sons
+    S.add(sons_count(BobE) == 2)
 
-# Jay has one brother and a father
-# Since Jay has one brother, Jay can't have more than one brother, so Jay_sons represents Jay+Jay's_brother
-s.add(Jay_sons == 2)
+    # Jay has one brother and a father
+    # Jay_sons represents Jay + Jay's brother
+    S.add(sons_count(JayE) + sons_count(JaysBrotherE) == 2)
 
-# The father (Bob) has two sons (already added above)
+    # Ensure all the previous constraints conclude that John is Jay's brother
+    S.add(sons_count(JayE) + sons_count(JohnE) == 2)
+    S.add(sons_count(BobE) == sons_count(JayE) + sons_count(JohnE))
 
-# Jay's brother has a brother and a father
-# This is a reiteration of the statement "Jay has one brother and a father" from another perspective
+    # Create a new constant of Person sort to represent JaysBrother
+    query = Const("query", Person)
+    S.add(query == JohnE)  # Assuming John is Jay's brother
 
-# Ensure all the previous constraints conclude that John is Jay's brother
-s.add(Jay_sons == Bob_sons, Jay_sons == John_sons)
-
-# Check if the problem has a solution
-result = s.check()
-
-# Extract the answer
-if result == sat:
-    m = s.model()
-    answer = "John is Jay's brother."
-else:
-    answer = "Failed to determine Jay's brother."
-
-# Assign the answer to the variable as requested
-answer = answer
+    return query
 ```
