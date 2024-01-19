@@ -13,7 +13,9 @@ from src.evals.components import Factorization
 from src.evals.components.sat_solver import LOGIC_TEMPLATE, SATSolver
 from src.utils import MOCK_RETURN, RANDOM_SEQUENCE, normalize
 
-ACTIVE = True
+from z3 import Solver, sat
+
+ACTIVE = False
 
 cur_file_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -206,7 +208,7 @@ The implementation must be a SAT solvable solution and follow the user problem r
 
     return True, {'scores': scoring}
 
-@toggle_test(ACTIVE, default=MOCK_RETURN)
+@toggle_test(True, default=MOCK_RETURN)
 def test_solve_puzzle():
     scoring  = []
     reader   = FileReader()
@@ -218,22 +220,20 @@ def test_solve_puzzle():
     trajectories   = reader((dir_path / "jays_brother_trajectories.txt").as_posix())
 
     query = "Bob has two sons, John and Jay. Jay has one brother and father. The father has two sons. Jay's brother has a brother and a father. Who is Jay's brother?"
-    task  = """
-    Using the provided solution to the Einstein puzzle as a reference, apply the Z3 solver to solve the puzzle.
-    Return executable code following the markdown convention that upon running is solving the puzzle and assigning the result to an `answer` variable.
+    task  = """Using the provided solution to the Einstein's puzzle as a reference, your task is to implement the `solve_puzzle` function with the z3 package and solve the "Who is Jay's brother" puzzle.
+    Only return the code of the `solve_puzzle` function between a ```python ... ``` code block.
     """
 
     template = f"""
-    [Problem]
-    {problem}
-
-    [Solution]
-    {solution}
-
-    [Task]
     {task}
 
-    [Puzzle]
+    Carefully read the following problem statement and learn how to associate the problem statement with the solution.
+    {problem}
+
+    Analyze the solution and learn how to associate the solution with the problem statement.
+    {solution}
+
+    Now, solve the puzzle in a similar fashion. Assume the solver `S` is given and the post-processing of the returned `Const` query is handled somewhere else.
     {query}
     """
 
@@ -252,13 +252,24 @@ def test_solve_puzzle():
             globals()
         )
 
-        answer = globals().get("answer")
+        # Tension…
+        S = Solver()
+        solve_puzzle = globals().get("solve_puzzle")
+        solution     = solve_puzzle(S)
+        validator    = S.check()
 
-        if answer is not None and "John" in answer:
-            # Attaboy!
-            scoring.append(1.0)
+        # …and release!
+        if validator == sat:
+            model = S.model()
+            answer = model[solution]
+
+            if "John" in str(answer):
+                # Attaboy!
+                scoring.append(1.0)
+            else:
+                # No cigar
+                scoring.append(0.0)
         else:
-            # No cigar
             scoring.append(0.0)
     except Exception as e:
         scoring.append(0.0)
@@ -266,8 +277,8 @@ def test_solve_puzzle():
     # How good?
     random     = Symbol(RANDOM_SEQUENCE)
     rand_score = human_solution.similarity(random, metric='cosine')
-    base_score = human_solution.similarity(trajectories.split("\n\n\n")).mean()
-    score      = human_solution.similarity(code, normalize=normalize(base_score, rand_score))
+    base_score = human_solution.similarity(trajectories.split("\n\n\n"), metric="cosine").mean()
+    score      = human_solution.similarity(code, normalize=normalize(base_score, rand_score), metric='cosine')
     scoring.append(score)
 
     return True, {'scores': scoring}
