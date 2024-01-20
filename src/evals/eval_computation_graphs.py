@@ -5,7 +5,7 @@ from pathlib import Path
 from datetime import datetime
 from ast import List
 
-from src.utils import MOCK_RETURN, RANDOM_SEQUENCE, METRIC
+from src.utils import MOCK_RETURN, RANDOM_SEQUENCE
 from src.evals.components.paper import Paper, RelatedWork, Cite, Abstract, Title, Method, Source
 
 from symai import Symbol, Expression, Function, Interface
@@ -226,7 +226,7 @@ class SequentialScheduler(Expression):
         if task.startswith('>>') and '[SUBTASK]' in task:
             # Choose the correct function context.
             option = self.choice(task, temperature=0.0)
-            option = Symbol(option).similarity(Symbol.symbols(*FUNCTIONS.keys())).argmax()
+            option = Symbol(option).measure(Symbol.symbols(*FUNCTIONS.keys())).argmax()
             # Run the expression
             key    = list(FUNCTIONS.keys())[option]
             # Use the memory to store the result of the expression.
@@ -247,7 +247,7 @@ class SequentialScheduler(Expression):
 class Evaluate(Expression):
     def forward(self, task, result, memory):
         # Evaluate the result of the program.
-        sim     = task.similarity(result)
+        sim     = task.measure(result)
         success = sim > 0.5 and 'finished successfully' in memory.join()
         memory.append(f"EVAL: {task} | Similarity: {sim} | Success: {success}")
         # TODO: ...
@@ -309,8 +309,8 @@ class Evaluation(Expression):
                     self.memory.append(f"ERROR: {func.__class__} raised an exception. {task}")
                 # Evaluate the result of the program.
                 self.eval(task, test, result, self.memory)
-                # update the similarity
-                sim        = Symbol(result).similarity(self.target)
+                # update the measure
+                sim        = Symbol(result).measure(self.target)
                 # increment the iteration counter
                 n_iter    += 1
         # Return the final result.
@@ -338,7 +338,7 @@ def test_sub_routine_custom_expression():
     # choose the correct function context
     choice = Choice(FUNCTIONS.keys())
     option = choice(task, temperature=0.0)
-    option = Symbol(option).similarity(Symbol.symbols(*FUNCTIONS.keys())).argmax()
+    option = Symbol(option).measure(Symbol.symbols(*FUNCTIONS.keys())).argmax()
     key    = list(FUNCTIONS.keys())[option]
     func   = FUNCTIONS[key]
     # run the sub-routine function
@@ -357,7 +357,7 @@ def test_sub_routine_search_engine():
     # choose the correct function context
     choice = Choice(FUNCTIONS.keys())
     option = choice(task, temperature=0.0)
-    option = Symbol(option).similarity(Symbol.symbols(*FUNCTIONS.keys())).argmax()
+    option = Symbol(option).measure(Symbol.symbols(*FUNCTIONS.keys())).argmax()
     key    = list(FUNCTIONS.keys())[option]
     func   = FUNCTIONS[key]
     # run the sub-routine function
@@ -374,7 +374,7 @@ def test_sub_routine_web_crawler():
     # choose the correct function context
     choice = Choice(FUNCTIONS.keys())
     option = choice(task, temperature=0.0)
-    option = Symbol(option).similarity(Symbol.symbols(*FUNCTIONS.keys())).argmax()
+    option = Symbol(option).measure(Symbol.symbols(*FUNCTIONS.keys())).argmax()
     key    = list(FUNCTIONS.keys())[option]
     func   = FUNCTIONS[key]
     # run the sub-routine function
@@ -391,7 +391,7 @@ def test_sub_routine_paper_indexer():
     # choose the correct function context
     choice = Choice(FUNCTIONS.keys())
     option = choice(task, temperature=0.0)
-    option = Symbol(option).similarity(Symbol.symbols(*FUNCTIONS.keys())).argmax()
+    option = Symbol(option).measure(Symbol.symbols(*FUNCTIONS.keys())).argmax()
     key    = list(FUNCTIONS.keys())[option]
     func   = FUNCTIONS[key]
     # run the sub-routine function
@@ -408,7 +408,7 @@ def test_sub_routine_os_commands():
     # choose the correct function context
     choice = Choice(FUNCTIONS.keys())
     option = choice(task, temperature=0.0)
-    option = Symbol(option).similarity(Symbol.symbols(*FUNCTIONS.keys())).argmax()
+    option = Symbol(option).measure(Symbol.symbols(*FUNCTIONS.keys())).argmax()
     key    = list(FUNCTIONS.keys())[option]
     func   = FUNCTIONS[key]
     os.makedirs('results', exist_ok=True)
@@ -453,30 +453,29 @@ def test_sub_routine_create_paper():
     results = expr.linker.results # get the intermediate results
 
     # validate intermediate results
-    #METRIC       = 'angular-similarity'
     method       = expr.linker.find('Method')
-    rand_sim     = rand_seq.similarity(method, metric=METRIC)
-    sim          = references[0].similarity(method, metric=METRIC)
+    rand_sim     = rand_seq.measure(method)
+    sim          = references[0].measure(method)
     scoring.append(sim)
 
     related_work = expr.linker.find('RelatedWork')
-    rand_sim     = rand_seq.similarity(related_work, metric=METRIC)
-    sim          = references[1].similarity(related_work, metric=METRIC)
+    rand_sim     = rand_seq.measure(related_work)
+    sim          = references[1].measure(related_work)
     scoring.append(sim)
 
     abstract     = expr.linker.find('Abstract')
-    rand_sim     = rand_seq.similarity(abstract, metric=METRIC)
-    sim          = references[2].similarity(abstract, metric=METRIC)
+    rand_sim     = rand_seq.measure(abstract)
+    sim          = references[2].measure(abstract)
     scoring.append(sim)
 
     title        = expr.linker.find('Title')
-    rand_sim     = rand_seq.similarity(title, metric=METRIC)
-    sim          = references[3].similarity(title, metric=METRIC)
+    rand_sim     = rand_seq.measure(title)
+    sim          = references[3].measure(title)
     scoring.append(sim)
 
     # combined results
-    rand_sim     = rand_seq.similarity(paper, metric=METRIC)
-    sim          = references[4].similarity(paper, metric=METRIC)
+    rand_sim     = rand_seq.measure(paper)
+    sim          = references[4].measure(paper)
     scoring.append(sim)
 
     # visualize the computation graph
@@ -493,5 +492,5 @@ def test_cite_paper():
     reader   = FileReader()
     solution = reader('src/evals/snippets/paper/reference_section_relatedwork.txt')
     res      = Cite(file_link='src/evals/snippets/bib/related_work/laird87.txt')
-    sim      = solution.similarity(res)
+    sim      = solution.measure(res)
     return sim, {'scores': [sim]}

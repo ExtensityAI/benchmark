@@ -8,7 +8,7 @@ from symai.post_processors import CodeExtractPostProcessor, StripPostProcessor
 from symai.utils import toggle_test
 
 from src.evals.components import Factorization
-from src.utils import MOCK_RETURN, RANDOM_SEQUENCE, METRIC, normalize
+from src.utils import MOCK_RETURN, RANDOM_SEQUENCE, normalize
 
 from z3 import Solver, sat
 
@@ -89,12 +89,12 @@ def test_factorize_formula():
     res         = func(expr)
     ref         = Symbol(fact)
     random      = Symbol(RANDOM_SEQUENCE)
-    rand_score  = ref.similarity(random)
-    base_score  = ref.similarity([Symbol("The factorized result is: d+(a+b-c)*(x-y)"),
-                                  Symbol("We obtain: d + ( x - y ) * ( a + b - c )"),
-                                  Symbol("(a + b - c) * (x - y) + d")]).mean()
+    rand_score  = ref.measure(random)
+    base_score  = ref.measure([Symbol("The factorized result is: d+(a+b-c)*(x-y)"),
+                               Symbol("We obtain: d + ( x - y ) * ( a + b - c )"),
+                               Symbol("(a + b - c) * (x - y) + d")]).mean()
     # validate
-    score       = ref.similarity(res, normalize=normalize(base_score, rand_score))
+    score       = ref.measure(res, normalize=normalize(base_score, rand_score))
     return True, {'scores': [score]}
 
 
@@ -113,9 +113,9 @@ def test_dsl_writing_capability():
     form1       = Symbol(formulation1)
     form2       = Symbol(formulation2)
     random      = Symbol(RANDOM_SEQUENCE) # remove the chance of simply rephrasing the question
-    rand_score  = random.similarity([form1, form2]).mean()
-    base_score  = form1.similarity(form2)
-    score       = form1.similarity(res, normalize=normalize(base_score, rand_score))
+    rand_score  = random.measure([form1, form2]).mean()
+    base_score  = form1.measure(form2)
+    score       = form1.measure(res, normalize=normalize(base_score, rand_score))
     scoring.append(score)
     # check for syntax violations
     if '("' in str(res) or '")' in str(res) or '",' in str(res) or '":' in str(res) or '=' in str(res):
@@ -202,9 +202,9 @@ def test_solve_puzzle():
 
     # How good?
     random     = Symbol(RANDOM_SEQUENCE)
-    rand_score = human_solution.similarity(random, metric=METRIC)
-    base_score = human_solution.similarity(trajectories.split("\n\n\n"), metric=METRIC).mean()
-    score      = human_solution.similarity(res, normalize=normalize(base_score, rand_score), metric=METRIC)
+    rand_score = human_solution.measure(random)
+    base_score = human_solution.measure(trajectories.split("\n\n\n")).mean()
+    score      = human_solution.measure(res, normalize=normalize(base_score, rand_score))
     scoring.append(score)
 
     return succ, {'scores': scoring}

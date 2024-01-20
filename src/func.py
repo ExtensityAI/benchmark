@@ -10,13 +10,14 @@ from openai import RateLimitError
 
 from typing import List, Callable, Optional
 
-from symai import Expression
+from symai import Symbol, Expression
 from symai.functional import EngineRepository
 from symai.backend.engines.neurosymbolic.engine_openai_gptX_chat import GPTXChatEngine
 from symai.backend.engines.index.engine_vectordb import VectorDBIndexEngine
 
 from src.engines.engine_llamacpp import LLaMACppClientEngine
 from src.engines.engine_google_vertex import GoogleGeminiEngine
+from src.utils import measure
 from src.evals import eval_in_context_associations
 from src.evals import eval_multimodal_bindings
 from src.evals import eval_program_synthesis
@@ -134,6 +135,11 @@ class EvaluateBenchmark(Expression):
         # Set the engine error rate exception if necessary
         rate_exception = None
         engine         = None
+
+        # set global primitives for symbolic AI
+        Symbol.set_primitive_globally('measure', measure)
+
+        # Set the engine configuration
         if experiment == 'gpt4' or experiment == 'gpt3.5':
             rate_exception = RateLimitError
             # initialize the engine

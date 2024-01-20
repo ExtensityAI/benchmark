@@ -1,6 +1,6 @@
 import os
 
-from src.utils import normalize, rand_ast_similarity, ast_similarity, RANDOM_SEQUENCE, MOCK_RETURN
+from src.utils import normalize, rand_ast_measure, ast_measure, RANDOM_SEQUENCE, MOCK_RETURN
 
 from symai import Symbol, Expression, Conversation
 from symai.components import FileReader, Execute, RuntimeExpression, ExpressionBuilder
@@ -37,18 +37,18 @@ No other functions or explanations are required.
     reader     = FileReader()
     solution1  = reader(os.path.join(cur_file_dir, 'snippets/latex_templating_solution_1.txt'))
     solution2  = reader(os.path.join(cur_file_dir, 'snippets/latex_templating_solution_2.txt'))
-    base_score = solution1.similarity(solution2)
+    base_score = solution1.measure(solution2)
     random_seq = RANDOM_SEQUENCE # remove the chance of parsing sub-sequence from the task description
-    rand_score = solution1.similarity(random_seq) # remove the chance of simply rephrasing the task
-    score      = solution1.similarity(raw_res, normalize=normalize(base_score, rand_score))
+    rand_score = solution1.measure(random_seq) # remove the chance of simply rephrasing the task
+    score      = solution1.measure(raw_res, normalize=normalize(base_score, rand_score))
     scoring.append(score)
 
     # Read the source code from files
-    solution1  = Symbol(solution1, callables={'similarity': ast_similarity})
-    # compute again normalization score but this time for AST similarity
-    base_score = solution1.similarity(solution2)
-    rand_score = 0.5*(rand_ast_similarity(solution1, random_seq) + rand_ast_similarity(solution2, random_seq))
-    score      = solution1.similarity(code, normalize=normalize(base_score, rand_score))
+    solution1  = Symbol(solution1, callables={'measure': ast_measure})
+    # compute again normalization score but this time for AST measure
+    base_score = solution1.measure(solution2)
+    rand_score = 0.5*(rand_ast_measure(solution1, random_seq) + rand_ast_measure(solution2, random_seq))
+    score      = solution1.measure(code, normalize=normalize(base_score, rand_score))
     scoring.append(score)
 
     # Execute the code
@@ -61,7 +61,7 @@ No other functions or explanations are required.
         out    = Symbol(res['locals']['_output_'])
         ori    = reader(os.path.join(cur_file_dir, 'snippets/latex_templating_output.txt'))
         # no normalization is needed here since the output has to be an exact match
-        score  = out.similarity(ori)
+        score  = out.measure(ori)
         scoring.append(score)
         success = True
     except Exception as e:
@@ -92,14 +92,14 @@ class APIExecutor(Expression):
         # Generate the code to implement the API call
         self._code    = self.builder(self._request)
         if self._verbose: print('[GENERATED_CODE]', self._code)
-        base_sim      = code.similarity(code2)
-        rand_sim      = rand.similarity(code2)
-        code_sim      = code.similarity(self._code, normalize=normalize(base_sim, rand_sim))
+        base_sim      = code.measure(code2)
+        rand_sim      = rand.measure(code2)
+        code_sim      = code.measure(self._code, normalize=normalize(base_sim, rand_sim))
         # Execute the code to define the 'run' function
         try:
             self._result  = self.executor(self._code, request=self._request)
             if self._verbose: print('[RESULT]:', self._result)
-            web_sim       = ref.similarity(self._result)
+            web_sim       = ref.measure(self._result)
         except Exception as e:
             self._result  = str(e)
             web_sim       = 0.0
@@ -161,13 +161,13 @@ _value_obj_ = QueryExpression
     except:
         scoring.append(0.0)
     query    = expr('extract the names from the text')
-    base_sim = solution1.similarity(solution2)
-    rand_sim = solution1.similarity(RANDOM_SEQUENCE)
-    sim      = solution1.similarity(code, normalize=normalize(base_sim, rand_sim))
+    base_sim = solution1.measure(solution2)
+    rand_sim = solution1.measure(RANDOM_SEQUENCE)
+    sim      = solution1.measure(code, normalize=normalize(base_sim, rand_sim))
     scoring.append(sim)
     try:
         res  = query('Hello my name is Max and I am 20 years old.')
-        sim  = res.similarity('Max')
+        sim  = res.measure('Max')
         scoring.append(sim)
     except:
         scoring.append(0.0)

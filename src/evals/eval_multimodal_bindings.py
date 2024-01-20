@@ -60,7 +60,7 @@ class MultiModalExpression(Expression):
 
         # testing the category detection accuracy
         category = self.choice(self.category.options.values(), default='unknown', temperature=0.0)
-        score    = category.similarity(self.category.options[option])
+        score    = category.measure(self.category.options[option])
 
         return option, score
 
@@ -75,7 +75,7 @@ class MultiModalExpression(Expression):
         if option == 0:
             ref_formula, instance_type, details  = presets()
             formula  = self.extract('mathematical formula')
-            score    = ref_formula.similarity(formula, metric='cosine')
+            score    = ref_formula.measure(formula)
             scoring.append(score)
             # subtypes of mathematical formula
             if formula.isinstanceof(LINEAR_FUNCTION, temperature=0.0):
@@ -90,7 +90,7 @@ class MultiModalExpression(Expression):
                 x        = self.extract('coordinate point (.,.)') # get coordinate point / could also ask for other points
                 query    = formula | f', point x = {x}' | f', solve {req}' # concatenate to the question and formula
                 res      = self.solver(query)
-                score    = answer.similarity(res, metric='cosine')
+                score    = answer.measure(res)
                 scoring.append(score)
 
             elif formula.isinstanceof(NUMBER_COMPARISON, temperature=0.0):
@@ -114,11 +114,11 @@ class MultiModalExpression(Expression):
             ori_url, page, content_sym, base_score, rand_score = presets()
             ori_url_sym = Symbol(ori_url)
             url         = self.extract('url')
-            score       = ori_url_sym.similarity(url, metric='cosine')
+            score       = ori_url_sym.measure(url)
             scoring.append(score)
             res         = self.func(page)
             # normalize the score towards the original content
-            score       = content_sym.similarity(res, metric='cosine', normalize=normalize(base_score, rand_score))
+            score       = content_sym.measure(res, normalize=normalize(base_score, rand_score))
             scoring.append(score)
 
         # search engine query
@@ -134,7 +134,7 @@ class MultiModalExpression(Expression):
 
             res   = Symbol(res)
             res   = res.extract("The answer based on the CDC source.")
-            score = res.similarity(answer, metric='cosine')
+            score = res.measure(answer)
             scoring.append(score)
 
         # optical character recognition
@@ -148,7 +148,7 @@ class MultiModalExpression(Expression):
                 res = Symbol(res)
 
             res = res.extract(self.value)
-            score = res.similarity(answer, metric='cosine')
+            score = res.measure(answer)
             scoring.append(score)
 
         # image rendering
@@ -206,8 +206,8 @@ The Microsoft
 
     content_sym = Symbol(content)
     summary_sym = Symbol(summary)
-    base_score  = content_sym.similarity(summary_sym, metric='cosine')
-    rand_score  = content_sym.similarity(Symbol(RANDOM_SEQUENCE), metric='cosine')
+    base_score  = content_sym.measure(summary_sym)
+    rand_score  = content_sym.measure(Symbol(RANDOM_SEQUENCE))
     scoring     = expr(lambda: 1, lambda: (url, content, content_sym, base_score, rand_score))
 
     return True, {'scores': scoring}

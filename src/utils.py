@@ -31,8 +31,27 @@ def normalize_score(base_score, rand_score, eps=1e-8):
 normalize = normalize_score
 # use all printable characters as a random sequence
 RANDOM_SEQUENCE = string.printable
+# reversed random sequence
+REVERSED_RANDOM_SEQUENCE = RANDOM_SEQUENCE[::-1]
+
+
 # general metric for similarity measure
 METRIC = 'cosine'
+# create a random symbol
+KERNEL = 'gaussian'
+
+
+def similarity_measure(self, other, normalize=None):
+    # Measure the similarity between two symbols
+    return self.similarity(other, metric=METRIC, normalize=normalize)
+
+
+def distance_measure(self, other, normalize=None):
+    # Measure the similarity between two symbols
+    return self.distance(other, kernel=KERNEL, normalize=normalize)
+
+
+measure = distance_measure
 
 
 def parse_file_to_ast(filename):
@@ -50,7 +69,7 @@ def tree_to_str(node):
     return f"{node.type}({children_str})"
 
 
-def rand_ast_similarity(tree, random_sequence=RANDOM_SEQUENCE):
+def rand_ast_measure(tree, random_sequence=RANDOM_SEQUENCE):
     if (isinstance(tree, str) or isinstance(tree, Path)) and os.path.exists(tree):
         tree, _ = parse_file_to_ast(tree)
     elif isinstance(tree, str):
@@ -69,7 +88,7 @@ def rand_ast_similarity(tree, random_sequence=RANDOM_SEQUENCE):
 
 
 # used as a primitive function for the Symbol class
-def ast_similarity(self, tree2, normalize=None):
+def ast_measure(self, tree2, normalize=None):
     tree1 = self.value
 
     # Check if the input is a file path or an AST

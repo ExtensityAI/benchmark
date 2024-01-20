@@ -36,7 +36,7 @@ Write the first 10 digits of Pi:
     # sanity check if models are working
     # every model must pass this basic test
     base = '3.1415926535'
-    sim  = sym.similarity(base)
+    sim  = sym.measure(base)
     return True, {'scores': [sim]}
 
 
@@ -84,7 +84,7 @@ def test_sub_and_contains() -> bool:
     # semantic understanding of subtraction
     base = 'Hello, I would like a cup of coffee.'
     res  = (Symbol('Hello, I would like a cup of tea.') - Symbol('tea')) + 'coffee'
-    sim  = res.similarity(base)
+    sim  = res.measure(base)
     return True, {'scores': [sim]}
 
 
@@ -107,7 +107,7 @@ def test_AND_logic():
     '''Test if logical AND can be used to combine two symbols'''
     base = 'The horn only sounds on Sundays and I hear the horn.'
     res  = Symbol('the horn only sounds on Sundays') & Symbol('I hear the horn')
-    sim  = res.similarity(base)
+    sim  = res.measure(base)
     return True, {'scores': [sim]}
 
 
@@ -117,7 +117,7 @@ def test_OR_logic():
     base    = 'The cat has whiskers and a tail.'
     subject = 'cat'
     res = Symbol(f'The {subject} has whiskers.') | Symbol(f'The {subject} has a tail.')
-    sim = np.maximum(res.similarity(base), res.similarity('True'))
+    sim = np.maximum(res.measure(base), res.measure('True'))
     return True, {'scores': [sim]}
 
 
@@ -126,7 +126,7 @@ def test_XOR_logic():
     '''Test if logical XOR can be used to combine two symbols'''
     base = 'It is unknown if the duck quacks or not.'
     res  = Symbol('The duck quacks.') ^ Symbol('The duck does not quack.')
-    sim  = np.maximum(res.similarity(base), res.similarity('False'))
+    sim  = np.maximum(res.measure(base), res.measure('False'))
     return True, {'scores': [sim]}
 
 
@@ -136,7 +136,7 @@ def test_insert_rshift():
     base = 'I love to eat apples and bananas'
     sym  = Symbol('I love to eat apples')
     res  = 'and bananas' >> sym
-    sim  = res.similarity(base)
+    sim  = res.measure(base)
     return True, {'scores': [sim]}
 
 
@@ -200,6 +200,6 @@ def test_clean():
     sym  = Symbol('Hello *&&7amp;;; \t\t\t\nWorld')
     res  = sym.clean()
     # check if the CLEAN operator retains the 2 essential words
-    sim  = res.similarity(base)
+    sim  = res.measure(base)
     return True, {'scores': [sim]}
 
