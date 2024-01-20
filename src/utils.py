@@ -43,7 +43,12 @@ KERNEL = 'gaussian'
 
 def similarity_measure(self, other, normalize=None):
     # Measure the similarity between two symbols
-    return self.similarity(other, metric=METRIC, normalize=normalize)
+    val = self.similarity(other, metric=METRIC, normalize=normalize)
+    if METRIC == 'cosine':
+        # account for the fact that cosine similarity is bounded between -1 and 1
+        # by normalizing the score to be between 0 and 1
+        return np.clip(val, 0.0, 1.0)
+    return val
 
 
 def distance_measure(self, other, normalize=None):
@@ -51,7 +56,7 @@ def distance_measure(self, other, normalize=None):
     return self.distance(other, kernel=KERNEL, normalize=normalize)
 
 
-measure = distance_measure
+measure = similarity_measure
 
 
 def parse_file_to_ast(filename):
