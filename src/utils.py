@@ -37,7 +37,7 @@ REVERSED_RANDOM_SEQUENCE = RANDOM_SEQUENCE[::-1]
 
 # general metric for similarity measure
 METRIC = 'cosine'
-# create a random symbol
+# kernel for distance measure
 KERNEL = 'gaussian'
 
 
@@ -56,6 +56,7 @@ def distance_measure(self, other, normalize=None):
     return self.distance(other, kernel=KERNEL, normalize=normalize)
 
 
+# set the default measure
 measure = distance_measure
 
 

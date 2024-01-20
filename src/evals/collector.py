@@ -1,6 +1,5 @@
-from symai import Symbol, Expression
+from symai import Symbol, Expression, Metadata
 
 
-class Collector(object):
-    def __init__(self, name, expr):
-        pass
+class Collector(Metadata):
+    pass
