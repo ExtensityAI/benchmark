@@ -33,7 +33,7 @@ No other functions or explanations are required.
     raw_res    = conv(task)
     scoring    = []
     processors = ProcessorPipeline([StripPostProcessor(), CodeExtractPostProcessor()])
-    code       = Symbol(processors(str(res), None))
+    code       = Symbol(processors(str(raw_res), None))
     reader     = FileReader()
     solution1  = reader(os.path.join(cur_file_dir, 'snippets/latex_templating_solution_1.txt'))
     solution2  = reader(os.path.join(cur_file_dir, 'snippets/latex_templating_solution_2.txt'))
