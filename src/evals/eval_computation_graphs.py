@@ -1,10 +1,11 @@
 import os
+import numpy as np
 
 from pathlib import Path
 from datetime import datetime
 from ast import List
 
-from src.utils import MOCK_RETURN
+from src.utils import MOCK_RETURN, RANDOM_SEQUENCE, METRIC
 from src.evals.components.paper import Paper, RelatedWork, Cite, Abstract, Title, Method, Source
 
 from symai import Symbol, Expression, Function, Interface
@@ -423,19 +424,18 @@ def test_sub_routine_os_commands():
 @toggle_test(True, default=MOCK_RETURN)
 def test_sub_routine_create_paper():
     # define the task
-    reader   = FileReader()
-    dir_path = Path(__file__).parent.absolute() / "snippets"
-    solution = map(reader, [(dir_path / "paper/reference_section_relatedwork.txt").as_posix(),
-                            (dir_path / "paper/reference_section_relatedwork.txt").as_posix(),
-                            (dir_path / "paper/reference_section_relatedwork.txt").as_posix(),
-                            (dir_path / "paper/reference_section_relatedwork.txt").as_posix(),
-                            ])
-    task     = Symbol("[Objective]\nWrite a paper about the SymbolicAI framework. Include citations and references from the referenced papers. Follow primarily the [Task] instructions.")
-    expected = [
-
-    ]
+    reader     = FileReader()
+    rand_seq   = Symbol(RANDOM_SEQUENCE)
+    dir_path   = Path(__file__).parent.absolute() / "snippets"
+    references = list(map(reader, [(dir_path / "paper/ref/reference_section_framework.txt").as_posix(),
+                                   (dir_path / "paper/ref/reference_section_relatedwork.txt").as_posix(),
+                                   (dir_path / "paper/ref/reference_abstract.txt").as_posix(),
+                                   (dir_path / "paper/ref/reference_title.txt").as_posix(),
+                                   (dir_path / "paper/ref/reference_paper.txt").as_posix()]))
+    scoring    = []
+    task       = Symbol("[Objective]\nWrite a paper about the SymbolicAI framework. Include citations and references from the referenced papers. Follow primarily the [Task] instructions.")
     # choose the correct function context
-    expr     = Paper(
+    expr       = Paper(
         Method(
             Source(file_link=(dir_path / "paper/method/symbolicai_docs.txt").as_posix()),
         ),
@@ -450,19 +450,41 @@ def test_sub_routine_create_paper():
         Title(),
     )
     paper   = expr(task, preview=True) # simulate the paper creation process
-    results = expr.linker.results
+    results = expr.linker.results # get the intermediate results
 
     # validate intermediate results
+    #METRIC       = 'angular-similarity'
+    method       = expr.linker.find('Method')
+    rand_sim     = rand_seq.similarity(method, metric=METRIC)
+    sim          = references[0].similarity(method, metric=METRIC)
+    scoring.append(sim)
 
+    related_work = expr.linker.find('RelatedWork')
+    rand_sim     = rand_seq.similarity(related_work, metric=METRIC)
+    sim          = references[1].similarity(related_work, metric=METRIC)
+    scoring.append(sim)
 
-    res     = solution.similarity(str(paper))
+    abstract     = expr.linker.find('Abstract')
+    rand_sim     = rand_seq.similarity(abstract, metric=METRIC)
+    sim          = references[2].similarity(abstract, metric=METRIC)
+    scoring.append(sim)
+
+    title        = expr.linker.find('Title')
+    rand_sim     = rand_seq.similarity(title, metric=METRIC)
+    sim          = references[3].similarity(title, metric=METRIC)
+    scoring.append(sim)
+
+    # combined results
+    rand_sim     = rand_seq.similarity(paper, metric=METRIC)
+    sim          = references[4].similarity(paper, metric=METRIC)
+    scoring.append(sim)
 
     # visualize the computation graph
     GraphViz()(expr, 'results/paper.html')
     # visualize the computation graph
     GraphViz()(results[-1], 'results/results.html')
 
-    return res, {'scores': [res]}
+    return True, {'scores': scoring}
 
 
 @toggle_test(SUB_ROUTINE_ACTIVE, default=MOCK_RETURN)

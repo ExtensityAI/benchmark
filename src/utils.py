@@ -31,6 +31,8 @@ def normalize_score(base_score, rand_score, eps=1e-8):
 normalize = normalize_score
 # use all printable characters as a random sequence
 RANDOM_SEQUENCE = string.printable
+# general metric for similarity measure
+METRIC = 'cosine'
 
 
 def parse_file_to_ast(filename):

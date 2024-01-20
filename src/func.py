@@ -188,7 +188,12 @@ class EvaluateBenchmark(Expression):
             results[experiment][type]['run_list']   = []
             results[experiment][type]['engine']     = None
 
-        print(f'Running {len(evals)} tests for {n_runs} runs, each with {len(seeds)} seeds per experiment.')
+        assert len(evals) > 0, 'No test functions found!'
+        assert len(seeds) > 0, 'No seeds found!'
+        assert len(experiments) > 0, 'No experiments found!'
+        assert n_runs > 0, 'Number of runs must be greater than 0!'
+
+        print(f'Running {len(evals)} test(s) for {n_runs} run(s), each with {len(seeds)} seed(s) per experiment.')
         # We alter between the test functions and the seeds per experiment since this creates a natural API cooldown between runs
         total_experiments = len(evals) * n_runs * len(seeds) * len(experiments)
         experiment_cnt    = 0

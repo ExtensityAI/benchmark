@@ -8,7 +8,7 @@ from symai.post_processors import CodeExtractPostProcessor, StripPostProcessor
 from symai.utils import toggle_test
 
 from src.evals.components import Factorization
-from src.utils import MOCK_RETURN, RANDOM_SEQUENCE, normalize
+from src.utils import MOCK_RETURN, RANDOM_SEQUENCE, METRIC, normalize
 
 from z3 import Solver, sat
 
@@ -162,6 +162,7 @@ def test_solve_puzzle():
     cv     = Conversation(auto_print=False)
     res    = cv(template)
     code   = pp(res.value, None, tag="python")
+    succ   = False
 
     # Execute the code
     try:
@@ -190,6 +191,7 @@ def test_solve_puzzle():
             else:
                 # No cigar
                 scoring.append(0.0)
+            succ = True # at least runnable
         else:
             scoring.append(0.0)
     except Exception as e:
@@ -200,10 +202,10 @@ def test_solve_puzzle():
 
     # How good?
     random     = Symbol(RANDOM_SEQUENCE)
-    rand_score = human_solution.similarity(random, metric='cosine')
-    base_score = human_solution.similarity(trajectories.split("\n\n\n"), metric="cosine").mean()
-    score      = human_solution.similarity(res, normalize=normalize(base_score, rand_score), metric='cosine')
+    rand_score = human_solution.similarity(random, metric=METRIC)
+    base_score = human_solution.similarity(trajectories.split("\n\n\n"), metric=METRIC).mean()
+    score      = human_solution.similarity(res, normalize=normalize(base_score, rand_score), metric=METRIC)
     scoring.append(score)
 
-    return True, {'scores': scoring}
+    return succ, {'scores': scoring}
 
