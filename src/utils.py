@@ -56,7 +56,7 @@ def distance_measure(self, other, normalize=None):
     return self.distance(other, kernel=KERNEL, normalize=normalize)
 
 
-measure = similarity_measure
+measure = distance_measure
 
 
 def parse_file_to_ast(filename):
