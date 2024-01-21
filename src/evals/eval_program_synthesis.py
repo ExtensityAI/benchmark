@@ -117,7 +117,7 @@ def test_api_builder(aggregate):
     reader    = FileReader()
     website   = reader(os.path.join(cur_file_dir, 'snippets/code_api_builder_website_result.txt'))
     ref_code  = reader(os.path.join(cur_file_dir, 'snippets/code_api_builder.txt'))                                     | aggregate.ref_code
-    ref_code2 = reader(os.path.join(cur_file_dir, 'snippets/code_api_builder2.txt'))
+    ref_code2 = reader(os.path.join(cur_file_dir, 'snippets/code_api_builder2.txt'))                                    | aggregate.ref_code2
     refs      = Symbol([ref_code, ref_code2]).mean(axis=0)                                                              | aggregate.refs
     executor  = APIExecutor() # creates code on the fly and executes it
     scores    = executor(aggregate,
