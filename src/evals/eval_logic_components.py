@@ -98,7 +98,7 @@ def test_factorize_formula(aggregate):
     # model based factorization
     func        = Factorization('Factorize d from the expression such that your final start with: `d + (...`:')
     res         = func(expr)                                                                                               | aggregate.generated
-    ref         = Symbol(fact)                                                                                             | aggregate.solution
+    ref         = Symbol(str(fact))                                                                                             | aggregate.solution
     rand_score  = ref.measure(random_seq)
     solutions   = Symbol(["The factorized result is: d+(a+b-c)*(x-y)",
                           "We obtain: d + ( x - y ) * ( a + b - c )",
@@ -117,16 +117,18 @@ def test_dsl_writing_capability(aggregate):
     reader       = FileReader()
     dir_path     = Path(__file__).parent.absolute() / "snippets"
     formulations = reader((dir_path / "jays_brother_trajectories.txt").as_posix())
-    formulation1, formulation2 = formulations.split("\n\n\n")
+    formulation1, formulation2, formulation3 = formulations.split("\n\n\n")
+    formulations = Symbol([formulation1, formulation2, formulation3])
+    form_means   = formulations.mean(axis=0)                                                                               | aggregate.formulations
     scoring      = []
     expr         = HOLFactorization(val, post_processors=[StripPostProcessor(), CodeExtractPostProcessor()])
     res          = expr(val)                                                                                               | aggregate.generated
     form1        = Symbol(formulation1)                                                                                    | aggregate.solution1
-    form2        = Symbol(formulation2)                                                                                    | aggregate.solution2
-    random       = Symbol(RANDOM_SEQUENCE) # remove the chance of simply rephrasing the question
-    rand_score   = random.measure([form1, form2]).mean()                                                                   | aggregate.rand_score
-    base_score   = form1.measure(form2)                                                                                    | aggregate.base_score
-    score        = form1.measure(res, normalize=normalize(base_score, rand_score))                                         | aggregate.score
+    # remove the chance of simply rephrasing the question
+    random       = Symbol([RANDOM_SEQUENCE, REVERSED_RANDOM_SEQUENCE]).mean(axis=0)                                        | aggregate.random_seq
+    rand_score   = random.measure(form_means)                                                                              | aggregate.rand_score
+    base_score   = formulations.cvs()                                                                                      | aggregate.base_score
+    score        = form1.measure(res, normalize=normalize(base_score, rand_score))                                         | aggregate.dsl_score
     scoring.append(score)
     # vary basic check for syntax violations
     if '("' in str(res) or '")' in str(res) or '",' in str(res) or '":' in str(res) or '=' in str(res):
@@ -196,24 +198,31 @@ def test_solve_puzzle(aggregate):
 
         # …but did you get it right?
         if validator == sat:
-            model  = S.model()
-            answer = model[solution]
-            # CHECK: if Attaboy! or No cigar
-            score  = 1.0 if "John" in str(answer) else 0.0                                                                | aggregate.score
-            scoring.append(score)
-            succ = True # at least runnable
+            try:
+                model  = S.model()
+                answer = model[solution]
+                # CHECK: if Attaboy! or No cigar
+                score  = 1.0 if "John" in str(answer) else 0.0                                                            | aggregate.score
+                scoring.append(score)
+                succ = True # at least runnable
+            except Exception as e:
+                score = 0.0                                                                                               | aggregate.score
+                scoring.append(score)
         else:
-            scoring.append(0.0)                                                                                           | aggregate.score
+            score = 0.0                                                                                                   | aggregate.score
+            scoring.append(score)
     except Exception as e:
+        score = 0.0                                                                                                       | aggregate.score
         # not runnable
-        scoring.append(0.0)                                                                                               | aggregate.score
+        scoring.append(score)
         # not verifiable
-        scoring.append(0.0)                                                                                               | aggregate.score
+        score = 0.0                                                                                                       | aggregate.score
+        scoring.append(score)
 
     # How good?
     random     = Symbol([RANDOM_SEQUENCE, REVERSED_RANDOM_SEQUENCE]).mean(axis=0)                                         | aggregate.random_seq
     rand_score = ref_solution.measure(random)                                                                             | aggregate.rand_score
-    solutions  = trajectories.split("\n\n\n").mean()                                                                      | aggregate.solutions
+    solutions  = Symbol(trajectories.split("\n\n\n")).mean()                                                              | aggregate.solutions
     base_score = ref_solution.measure(solutions)                                                                          | aggregate.base_score
     score      = ref_solution.measure(res, normalize=normalize(base_score, rand_score))                                   | aggregate.gen_score
     scoring.append(score)

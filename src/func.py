@@ -9,7 +9,7 @@ from time import sleep, time
 from openai import RateLimitError
 from typing import List, Callable, Optional
 
-from symai import Symbol, Expression, GlobalSymbolPrimitive
+from symai import Expression, GlobalSymbolPrimitive
 from symai.functional import EngineRepository
 from symai.backend.engines.neurosymbolic.engine_openai_gptX_chat import GPTXChatEngine
 from symai.backend.engines.index.engine_vectordb import VectorDBIndexEngine

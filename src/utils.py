@@ -22,6 +22,10 @@ def bool_success(res):
 
 def normalize_score(base_score, rand_score, eps=1e-8):
     def _func(score):
+        nonlocal base_score, rand_score
+        base_score = base_score.value if isinstance(base_score, Symbol) else base_score
+        rand_score = rand_score.value if isinstance(rand_score, Symbol) else rand_score
+        score      = score.value if isinstance(score, Symbol) else score
         # Ensure that the baseline score is always higher or equal to the random score
         z       = 1.0 / np.maximum(base_score - rand_score, eps)
         z_rand  = rand_score * z
@@ -88,7 +92,7 @@ measure = distance_measure
 def embedding_mean(self, axis=0):
     # Compute the mean of the embedding
     res = np.mean(self.embedding, axis=axis)
-    return res
+    return Symbol(res)
 
 
 def cross_validation_score(self, folds=2):
@@ -112,7 +116,7 @@ def cross_validation_score(self, folds=2):
         # compute the distance between the test sample and the training mean
         score = Symbol(train_mean).measure(Symbol(test_sample))
         scores.append(score)
-    return np.mean(scores)
+    return Symbol(np.mean(scores))
 
 
 def parse_file_to_ast(filename):

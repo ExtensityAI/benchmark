@@ -1,5 +1,3 @@
-import sympy as sym
-
 from pathlib import Path
 from src.utils import normalize, RANDOM_SEQUENCE, REVERSED_RANDOM_SEQUENCE, MOCK_RETURN, success_score
 from symai import core_ext, Symbol, Expression, Interface, Function
