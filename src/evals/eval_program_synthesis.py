@@ -15,7 +15,7 @@ cur_file_dir = os.path.dirname(os.path.abspath(__file__))
 
 
 @toggle_test(ACTIVE, default=MOCK_RETURN)
-def test_application_template():
+def test_application_template(aggregate):
     task      = """[Task]
 Create a function `create_latex_result` that takes in the `benchmark_results` as `data` and parses the LaTeX table rows and columns based on the `data` results. The table should follow the `latex_template` format and populate the rows table as indicated by the placeholder variables. Mark the best performing model per row with bold text. At the bottom of the benchmarks, place the values of the total row by computing the average over all columns and populating the `total_values` entry in the `latex_template`.
 The table should be returned as a string by the function.
@@ -108,7 +108,7 @@ class APIExecutor(Expression):
 
 
 @toggle_test(ACTIVE, default=MOCK_RETURN)
-def test_api_builder():
+def test_api_builder(aggregate):
     ref       = Symbol("Yannic Kilcher")
     rand_seq  = Symbol(RANDOM_SEQUENCE)
     reader    = FileReader()
@@ -122,7 +122,7 @@ def test_api_builder():
 
 
 @toggle_test(ACTIVE, default=MOCK_RETURN)
-def test_expression_builder():
+def test_expression_builder(aggregate):
     solution1 = Symbol("""
 # do not remove or change the imports
 from symai import Expression, Function, Symbol

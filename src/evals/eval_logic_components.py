@@ -76,7 +76,7 @@ class HOLFactorization(Function):
 
 
 @toggle_test(ACTIVE, default=MOCK_RETURN)
-def test_factorize_formula():
+def test_factorize_formula(aggregate):
     a, b, c, d, x, y = sym.symbols('a, b, c, d, x, y')
     expr        = a * x + b * x - c * x - a * y - b * y + c * y + d
     stmt        = Symbol("Can you simplify me the following expression: a*x + b*x - c*x - a*y - b*y + c*y + d")
@@ -99,7 +99,7 @@ def test_factorize_formula():
 
 
 @toggle_test(ACTIVE, default=MOCK_RETURN)
-def test_dsl_writing_capability():
+def test_dsl_writing_capability(aggregate):
     # test only the capability to follow template instructions from a custom DSL (syntax) + semantic structure
     reader       = FileReader()
     dir_path     = Path(__file__).parent.absolute() / "snippets"
@@ -127,7 +127,7 @@ def test_dsl_writing_capability():
 
 
 @toggle_test(ACTIVE, default=MOCK_RETURN)
-def test_solve_puzzle():
+def test_solve_puzzle(aggregate):
     scoring  = []
     reader   = FileReader()
     dir_path = Path(__file__).parent.absolute() / "snippets"

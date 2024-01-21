@@ -173,7 +173,7 @@ class MultiModalExpression(Expression):
 
 
 @toggle_test(ACTIVE, default=MOCK_RETURN)
-def test_website_scraping():
+def test_website_scraping(aggregate):
     # scraped content
     content = """ChatGPT back online after ‘major outage,’ OpenAI says
 PUBLISHED THU, DEC 14 20231:58 AM EST
@@ -214,7 +214,7 @@ The Microsoft
 
 
 @toggle_test(ACTIVE, default=MOCK_RETURN)
-def test_search_engine():
+def test_search_engine(aggregate):
     query  = "What is sulfuric acid?"
 
     # Let's test whether or not it can extract the answer based on the CDC source.
@@ -226,7 +226,7 @@ def test_search_engine():
 
 
 @toggle_test(ACTIVE, default=MOCK_RETURN)
-def test_linear_function_computation():
+def test_linear_function_computation(aggregate):
     query   = Symbol('What is the y-coordinate of the point where this line crosses the y-axis?')
     val     = Symbol("A line parallel to y = 4x + 6 passes through a point P=(x1=5, y1=10).")
     expr    = MultiModalExpression(query)
@@ -236,7 +236,7 @@ def test_linear_function_computation():
 
 
 @toggle_test(ACTIVE, default=MOCK_RETURN)
-def test_comparison():
+def test_comparison(aggregate):
     val  = Symbol("is 100044347 bigger than 129981063.472?")
     expr = MultiModalExpression(val)
     res  = expr(lambda: 0, lambda: (Symbol('100044347 > 129981063.472'), Symbol(NUMBER_COMPARISON), False))
@@ -244,7 +244,7 @@ def test_comparison():
 
 
 @toggle_test(ACTIVE, default=MOCK_RETURN)
-def test_ocr_engine():
+def test_ocr_engine(aggregate):
     query   = "Extract the current balance from the bill image."
 
     answer = Symbol("$ 21,920.37")

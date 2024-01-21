@@ -10,10 +10,15 @@ from pathlib import Path
 from symai import Symbol
 
 
+
 success_score = {'scores': [1.0]}
 mock_score    = copy.deepcopy(success_score)
 mock_score.update({'mock': True})
 MOCK_RETURN = (True, mock_score)
+
+
+def bool_success(res):
+    return {'scores': [1.0 if res else 0.0]}
 
 
 def normalize_score(base_score, rand_score, eps=1e-8):
@@ -54,6 +59,13 @@ def similarity_measure(self, other, normalize=None):
 def distance_measure(self, other, normalize=None):
     # Measure the similarity between two symbols
     return self.distance(other, kernel=KERNEL, normalize=normalize)
+
+
+def frechet_measure(self, other, normalize=None):
+    # Measure the similarity between two symbols
+    sigma1 = np.cov(self.embedding, rowvar=False)
+    sigma2 = np.cov(other.embedding, rowvar=False)
+    return self.distance(other, kernel='frechet', normalize=normalize, sigma1=sigma1, sigma2=sigma2)
 
 
 # set the default measure

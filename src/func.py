@@ -7,13 +7,13 @@ import numpy as np
 from tqdm import tqdm
 from time import sleep, time
 from openai import RateLimitError
-
 from typing import List, Callable, Optional
 
 from symai import Symbol, Expression
 from symai.functional import EngineRepository
 from symai.backend.engines.neurosymbolic.engine_openai_gptX_chat import GPTXChatEngine
 from symai.backend.engines.index.engine_vectordb import VectorDBIndexEngine
+from symai.collect.stats import Aggregator
 
 from src.engines.engine_llamacpp import LLaMACppClientEngine
 from src.engines.engine_google_vertex import GoogleGeminiEngine
@@ -123,10 +123,14 @@ class EvaluateBenchmark(Expression):
                        **kwargs):
         super().__init__(**kwargs)
         self.eval_in_context_associations = eval_in_context_associations
-        self.eval_multimodal_bindings = eval_multimodal_bindings
-        self.eval_program_synthesis = eval_program_synthesis
-        self.eval_logic_components = eval_logic_components
-        self.eval_computation_graphs = eval_computation_graphs
+        self.eval_multimodal_bindings     = eval_multimodal_bindings
+        self.eval_program_synthesis       = eval_program_synthesis
+        self.eval_logic_components        = eval_logic_components
+        self.eval_computation_graphs      = eval_computation_graphs
+        self.aggregator = Aggregator()
+        # set global primitives for symbolic AI
+        Symbol.set_primitive_globally('measure', measure)
+        # Register index engine globally for all Symbols
         EngineRepository.register('index', VectorDBIndexEngine(index_name='dataindex', index_dims=768, index_top_k=5))
         # Register embeddings engine globally for all Symbols from plugin
         EngineRepository.register_from_plugin('embedding', plugin='ExtensityAI/embeddings', kwargs={'model': 'all-mpnet-base-v2'}, allow_engine_override=True)
@@ -135,9 +139,6 @@ class EvaluateBenchmark(Expression):
         # Set the engine error rate exception if necessary
         rate_exception = None
         engine         = None
-
-        # set global primitives for symbolic AI
-        Symbol.set_primitive_globally('measure', measure)
 
         # Set the engine configuration
         if experiment == 'gpt4' or experiment == 'gpt3.5':
@@ -223,8 +224,9 @@ class EvaluateBenchmark(Expression):
                         def run_with_backoff(*args, **kwargs):
                             nonlocal is_mock
                             start_time      = time()  # Start timing
+                            aggregator = self.aggregator[experiment][type][fun_name]
                             try:
-                                res, info = test_func(*args, **kwargs)
+                                res, info = test_func(aggregator, *args, **kwargs)
                             except Exception as e:
                                 print('EVAL FAILURE:', fun_name, e) # Ignore exceptions and count as a failure
                                 return False, 0.0, 0.0

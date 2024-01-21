@@ -318,7 +318,7 @@ class Evaluation(Expression):
 
 
 @toggle_test(ACTIVE, default=MOCK_RETURN)
-def test_program():
+def test_program(aggregate):
     expr   = Evaluation()
     reader = FileReader()
     cur_file_dir = os.path.dirname(os.path.abspath(__file__))
@@ -332,7 +332,7 @@ SUB_ROUTINE_ACTIVE = False
 
 
 @toggle_test(SUB_ROUTINE_ACTIVE, default=MOCK_RETURN)
-def test_sub_routine_custom_expression():
+def test_sub_routine_custom_expression(aggregate):
     # define the task
     task   = "Create a query Expression that is initializes a Function with a prompt and processes a data Symbol based on the custom Function."
     # choose the correct function context
@@ -351,7 +351,7 @@ def test_sub_routine_custom_expression():
 
 
 @toggle_test(SUB_ROUTINE_ACTIVE, default=MOCK_RETURN)
-def test_sub_routine_search_engine():
+def test_sub_routine_search_engine(aggregate):
     # define the task
     task   = "How is the weather in New York today?"
     # choose the correct function context
@@ -368,7 +368,7 @@ def test_sub_routine_search_engine():
 
 
 @toggle_test(SUB_ROUTINE_ACTIVE, default=MOCK_RETURN)
-def test_sub_routine_web_crawler():
+def test_sub_routine_web_crawler(aggregate):
     # define the task
     task   = "Open up the website https://www.cnbc.com/investing/"
     # choose the correct function context
@@ -385,7 +385,7 @@ def test_sub_routine_web_crawler():
 
 
 @toggle_test(SUB_ROUTINE_ACTIVE, default=MOCK_RETURN)
-def test_sub_routine_paper_indexer():
+def test_sub_routine_paper_indexer(aggregate):
     # define the task
     task   = "Explain the central concepts in programming language theory used in SymbolicAI using the indexed papers."
     # choose the correct function context
@@ -402,7 +402,7 @@ def test_sub_routine_paper_indexer():
 
 
 @toggle_test(SUB_ROUTINE_ACTIVE, default=MOCK_RETURN)
-def test_sub_routine_os_commands():
+def test_sub_routine_os_commands(aggregate):
     # define the task
     task   = "Create a new text file named `results/test.txt` in the `results` directory and write the text `Hello World!` to the file."
     # choose the correct function context
@@ -422,7 +422,7 @@ def test_sub_routine_os_commands():
 
 
 @toggle_test(True, default=MOCK_RETURN)
-def test_sub_routine_create_paper():
+def test_sub_routine_create_paper(aggregate):
     # define the task
     reader     = FileReader()
     rand_seq   = Symbol(RANDOM_SEQUENCE)
@@ -487,7 +487,7 @@ def test_sub_routine_create_paper():
 
 
 @toggle_test(SUB_ROUTINE_ACTIVE, default=MOCK_RETURN)
-def test_cite_paper():
+def test_cite_paper(aggregate):
     # define the task
     reader   = FileReader()
     solution = reader('src/evals/snippets/paper/reference_section_relatedwork.txt')
