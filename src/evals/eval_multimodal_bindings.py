@@ -56,11 +56,11 @@ class MultiModalExpression(Expression):
         self.category    = Category()
 
     def detect_option(self, aggregate, assertion):
-        option       = assertion()                                                                     | aggregate.category.option
+        option       = assertion()                                                                  | aggregate.category.option
 
         # testing the category detection accuracy
-        category = self.choice(self.category.options.values(), default='unknown', temperature=0.0)     | aggregate.category.category
-        score    = category.measure(self.category.options[option])                                     | aggregate.category.score
+        category = self.choice(self.category.options.values(), default='unknown', temperature=0.0)  | aggregate.category.category
+        score    = category.measure(self.category.options[option])                                  | aggregate.category.score
 
         return option, score
 
@@ -75,37 +75,37 @@ class MultiModalExpression(Expression):
         # mathematical formula
         if option == 0:
             ref_formula, instance_type, details  = presets()
-            ref_formula = Symbol(ref_formula)                                           | aggregate.ref_formula
-            formula     = self.extract('mathematical formula')                          | aggregate.formula
-            score       = ref_formula.measure(formula)                                  | aggregate.formula_score
+            ref_formula = Symbol(ref_formula)                                                       | aggregate.ref_formula
+            formula     = self.extract('mathematical formula')                                      | aggregate.formula
+            score       = ref_formula.measure(formula)                                              | aggregate.formula_score
             scoring.append(score)
             # subtypes of mathematical formula
             if formula.isinstanceof(LINEAR_FUNCTION, temperature=0.0):
-                score    = (1.0 if instance_type == LINEAR_FUNCTION else 0.0)           | aggregate.linear_function.score
+                score    = (1.0 if instance_type == LINEAR_FUNCTION else 0.0)                       | aggregate.linear_function.score
                 scoring.append(score)
-                answer   = details                                                      | aggregate.linear_function.answer
+                answer   = details                                                                  | aggregate.linear_function.answer
                 # prepare for wolframalpha
                 question = self.extract('question sentence')
                 req      = question.extract('what is requested?')
                 x        = self.extract('coordinate point (.,.)') # get coordinate point / could also ask for other points
                 query    = formula | f', point x = {x}' | f', solve {req}' # concatenate to the question and formula
                 res      = self.solver(query)
-                score    = answer.measure(res)                                          | aggregate.linear_function.score
+                score    = answer.measure(res)                                                      | aggregate.linear_function.score
                 scoring.append(score)
                 success  = True
 
             elif formula.isinstanceof(NUMBER_COMPARISON, temperature=0.0):
-                score    = (1.0 if instance_type == NUMBER_COMPARISON else 0.0)         | aggregate.number_comparison.score
+                score    = (1.0 if instance_type == NUMBER_COMPARISON else 0.0)                     | aggregate.number_comparison.score
                 scoring.append(score)
-                answer   = details                                                      | aggregate.number_comparison.answer
+                answer   = details                                                                  | aggregate.number_comparison.answer
                 res      = self.solver(formula) # send directly to wolframalpha
-                score    = (1.0 if res == answer else 0.0)                              | aggregate.number_comparison.score
+                score    = (1.0 if res == answer else 0.0)                                          | aggregate.number_comparison.score
                 scoring.append(score)
                 success  = True
 
             else:
                 # no score for other types of mathematical formula
-                score    = 0.0                                                          | aggregate.unknown.score
+                score    = 0.0                                                                      | aggregate.unknown.score
                 scoring.append(score)
                 success  = False
 

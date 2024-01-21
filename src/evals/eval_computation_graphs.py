@@ -5,7 +5,7 @@ from pathlib import Path
 from datetime import datetime
 from ast import List
 
-from src.utils import MOCK_RETURN, RANDOM_SEQUENCE
+from src.utils import MOCK_RETURN, RANDOM_SEQUENCE, REVERSED_RANDOM_SEQUENCE
 from src.evals.components.paper import Paper, RelatedWork, Cite, Abstract, Title, Method, Source
 
 from symai import Symbol, Expression, Function, Interface
@@ -425,13 +425,13 @@ def test_sub_routine_os_commands(aggregate):
 def test_sub_routine_create_paper(aggregate):
     # define the task
     reader     = FileReader()
-    rand_seq   = Symbol(RANDOM_SEQUENCE)
+    rand_seq   = Symbol([RANDOM_SEQUENCE, REVERSED_RANDOM_SEQUENCE]).mean(axis=0)                              | aggregate.rand_seq
     dir_path   = Path(__file__).parent.absolute() / "snippets"
-    references = list(map(reader, [(dir_path / "paper/ref/reference_section_framework.txt").as_posix(),
-                                   (dir_path / "paper/ref/reference_section_relatedwork.txt").as_posix(),
-                                   (dir_path / "paper/ref/reference_abstract.txt").as_posix(),
-                                   (dir_path / "paper/ref/reference_title.txt").as_posix(),
-                                   (dir_path / "paper/ref/reference_paper.txt").as_posix()]))
+    references = list(map(reader, [(dir_path / "paper/ref/reference_section_framework.txt").as_posix()         | aggregate.ref_method,
+                                   (dir_path / "paper/ref/reference_section_relatedwork.txt").as_posix()       | aggregate.ref_related_work,
+                                   (dir_path / "paper/ref/reference_abstract.txt").as_posix()                  | aggregate.ref_abstract,
+                                   (dir_path / "paper/ref/reference_title.txt").as_posix()                     | aggregate.ref_title,
+                                   (dir_path / "paper/ref/reference_paper.txt").as_posix()])                   | aggregate.ref_paper)
     scoring    = []
     task       = Symbol("[Objective]\nWrite a paper about the SymbolicAI framework. Include citations and references from the referenced papers. Follow primarily the [Task] instructions.")
     # choose the correct function context
@@ -449,33 +449,35 @@ def test_sub_routine_create_paper(aggregate):
         Abstract(),
         Title(),
     )
-    paper   = expr(task, preview=True) # simulate the paper creation process
+    # simulate the paper creation process
+    #paper   = expr(task, preview=True)
+    paper   = expr(task)                                                                                       | aggregate.gen_paper
     results = expr.linker.results # get the intermediate results
 
     # validate intermediate results
-    method       = expr.linker.find('Method')
-    rand_sim     = rand_seq.measure(method)
-    sim          = references[0].measure(method)
+    method       = expr.linker.find('Method')                                                                  | aggregate.gen_method
+    rand_sim     = rand_seq.measure(method)                                                                    | aggregate.rand_method
+    sim          = references[0].measure(method)                                                               | aggregate.sim_method
     scoring.append(sim)
 
-    related_work = expr.linker.find('RelatedWork')
-    rand_sim     = rand_seq.measure(related_work)
-    sim          = references[1].measure(related_work)
+    related_work = expr.linker.find('RelatedWork')                                                             | aggregate.gen_related_work
+    rand_sim     = rand_seq.measure(related_work)                                                              | aggregate.rand_related_work
+    sim          = references[1].measure(related_work)                                                         | aggregate.sim_related_work
     scoring.append(sim)
 
-    abstract     = expr.linker.find('Abstract')
-    rand_sim     = rand_seq.measure(abstract)
-    sim          = references[2].measure(abstract)
+    abstract     = expr.linker.find('Abstract')                                                                | aggregate.gen_abstract
+    rand_sim     = rand_seq.measure(abstract)                                                                  | aggregate.rand_abstract
+    sim          = references[2].measure(abstract)                                                             | aggregate.sim_abstract
     scoring.append(sim)
 
-    title        = expr.linker.find('Title')
-    rand_sim     = rand_seq.measure(title)
-    sim          = references[3].measure(title)
+    title        = expr.linker.find('Title')                                                                   | aggregate.gen_title
+    rand_sim     = rand_seq.measure(title)                                                                     | aggregate.rand_title
+    sim          = references[3].measure(title)                                                                | aggregate.sim_title
     scoring.append(sim)
 
     # combined results
-    rand_sim     = rand_seq.measure(paper)
-    sim          = references[4].measure(paper)
+    rand_sim     = rand_seq.measure(paper)                                                                     | aggregate.rand_paper
+    sim          = references[4].measure(paper)                                                                | aggregate.sim_paper
     scoring.append(sim)
 
     # visualize the computation graph
