@@ -9,7 +9,7 @@ from time import sleep, time
 from openai import RateLimitError
 from typing import List, Callable, Optional
 
-from symai import Symbol, Expression
+from symai import Symbol, Expression, GlobalSymbolPrimitive
 from symai.functional import EngineRepository
 from symai.backend.engines.neurosymbolic.engine_openai_gptX_chat import GPTXChatEngine
 from symai.backend.engines.index.engine_vectordb import VectorDBIndexEngine
@@ -17,7 +17,7 @@ from symai.collect.stats import Aggregator
 
 from src.engines.engine_llamacpp import LLaMACppClientEngine
 from src.engines.engine_google_vertex import GoogleGeminiEngine
-from src.utils import measure
+from src.utils import measure, embedding_mean, cross_validation_score
 from src.evals import eval_in_context_associations
 from src.evals import eval_multimodal_bindings
 from src.evals import eval_program_synthesis
@@ -129,7 +129,9 @@ class EvaluateBenchmark(Expression):
         self.eval_computation_graphs      = eval_computation_graphs
         self.aggregator = Aggregator()
         # set global primitives for symbolic AI
-        Symbol.set_primitive_globally('measure', measure)
+        GlobalSymbolPrimitive('measure', measure)
+        GlobalSymbolPrimitive('mean', embedding_mean)
+        GlobalSymbolPrimitive('cvs', cross_validation_score)
         # Register index engine globally for all Symbols
         EngineRepository.register('index', VectorDBIndexEngine(index_name='dataindex', index_dims=768, index_top_k=5))
         # Register embeddings engine globally for all Symbols from plugin
@@ -286,6 +288,7 @@ class EvaluateBenchmark(Expression):
         type_results = {experiment: results[experiment][type] for experiment in results}
         with open(f'results/{type}_results.json', 'w') as f:
             json.dump(type_results, f, indent=2)
+        self.aggregator.save(f'results/{type}_aggregator.json')
 
     def forward(self, experiments=['gpt4', 'llama', 'gpt3.5', 'zephyr', 'gemini', 'mistral'], n_runs=3, seeds=[42, 77, 97], dummy=False):
         # This dictionary will now hold the scoring for each test type

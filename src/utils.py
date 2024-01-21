@@ -10,7 +10,6 @@ from pathlib import Path
 from symai import Symbol
 
 
-
 success_score = {'scores': [1.0]}
 mock_score    = copy.deepcopy(success_score)
 mock_score.update({'mock': True})
@@ -28,7 +27,10 @@ def normalize_score(base_score, rand_score, eps=1e-8):
         z_rand  = rand_score * z
         score   = score * z - z_rand
         # Do not allow negative scores
-        return np.clip(score, 0.0, 1.0)
+        res     = np.clip(score, 0.0, 1.0)
+        if isinstance(res, np.ndarray):
+            res = res.item()
+        return res
     return _func
 
 
@@ -52,24 +54,65 @@ def similarity_measure(self, other, normalize=None):
     if METRIC == 'cosine':
         # account for the fact that cosine similarity is bounded between -1 and 1
         # by normalizing the score to be between 0 and 1
-        return np.clip(val, 0.0, 1.0)
+        res = np.clip(val, 0.0, 1.0)
+        if isinstance(res, np.float64):
+            res = res.item()
+        return res
+    if isinstance(res, np.float64):
+        res = res.item()
     return val
 
 
 def distance_measure(self, other, normalize=None):
     # Measure the similarity between two symbols
-    return self.distance(other, kernel=KERNEL, normalize=normalize)
+    res = self.distance(other, kernel=KERNEL, normalize=normalize)
+    if isinstance(res, np.float64):
+        res = res.item()
+    return res
 
 
 def frechet_measure(self, other, normalize=None):
     # Measure the similarity between two symbols
     sigma1 = np.cov(self.embedding, rowvar=False)
     sigma2 = np.cov(other.embedding, rowvar=False)
-    return self.distance(other, kernel='frechet', normalize=normalize, sigma1=sigma1, sigma2=sigma2)
+    res    = self.distance(other, kernel='frechet', normalize=normalize, sigma1=sigma1, sigma2=sigma2)
+    if isinstance(res, np.float64):
+        res = res.item()
+    return res
 
 
 # set the default measure
 measure = distance_measure
+
+
+def embedding_mean(self, axis=0):
+    # Compute the mean of the embedding
+    res = np.mean(self.embedding, axis=axis)
+    return res
+
+
+def cross_validation_score(self, folds=2):
+    # Compute the cross validation score
+    embeddings = self.embedding
+    assert len(embeddings.shape) == 2, "Embeddings must be a 2D array"
+    assert embeddings.shape[0] >= folds, "Number of folds must be less than the number of embeddings"
+    # permute indices for cross validation
+    indices = np.random.permutation(embeddings.shape[0])
+    # compute leave-one-out cross validation score
+    scores = []
+    for i in range(folds):
+        # leave out the i-th embedding
+        test_idx    = indices[i]
+        test_sample = embeddings[test_idx]
+        # train on the rest of the embeddings
+        train_idx    = np.delete(indices, i)
+        train_sample = embeddings[train_idx]
+        # compute the mean of the training sample
+        train_mean = np.mean(train_sample, axis=0)
+        # compute the distance between the test sample and the training mean
+        score = Symbol(train_mean).measure(Symbol(test_sample))
+        scores.append(score)
+    return np.mean(scores)
 
 
 def parse_file_to_ast(filename):

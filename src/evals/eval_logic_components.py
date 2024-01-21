@@ -8,7 +8,7 @@ from symai.post_processors import CodeExtractPostProcessor, StripPostProcessor
 from symai.utils import toggle_test
 
 from src.evals.components import Factorization
-from src.utils import MOCK_RETURN, RANDOM_SEQUENCE, normalize
+from src.utils import MOCK_RETURN, RANDOM_SEQUENCE, REVERSED_RANDOM_SEQUENCE, normalize
 
 from z3 import Solver, sat
 
@@ -83,13 +83,22 @@ def test_factorize_formula(aggregate):
     res         = stmt.extract('formula')
     #res goes to sympy
     symbols_    = stmt.extract('all unique symbols as a list')
+    refs        = Symbol(['a, b, c, d, x, y',
+                          'y, x, a, b, c, d',
+                          'a, b, c, d, x, y',
+                          'a, b, c, d, x, y',
+                          'a, b, c, d, x, y',
+                          'a, b, c, d, x, y'])
+    base_score  = refs.cvs()
+    mean_refs   = refs.mean()
+    score       = symbols_.measure(mean_refs, normalize=normalize(base_score, rand_score))
+    random_seq  = Symbol([RANDOM_SEQUENCE, REVERSED_RANDOM_SEQUENCE]).mean(axis=0)
     fact        = sym.collect(expr, d, func=sym.factor)
     # model based factorization
     func        = Factorization('Factorize d from the expression such that your final start with: `d + (...`:')
     res         = func(expr)
     ref         = Symbol(fact)
-    random      = Symbol(RANDOM_SEQUENCE)
-    rand_score  = ref.measure(random)
+    rand_score  = ref.measure(random_seq)
     base_score  = ref.measure([Symbol("The factorized result is: d+(a+b-c)*(x-y)"),
                                Symbol("We obtain: d + ( x - y ) * ( a + b - c )"),
                                Symbol("(a + b - c) * (x - y) + d")]).mean()

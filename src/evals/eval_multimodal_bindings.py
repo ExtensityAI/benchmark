@@ -1,7 +1,7 @@
 import sympy as sym
 
 from pathlib import Path
-from src.utils import normalize, RANDOM_SEQUENCE, MOCK_RETURN, success_score
+from src.utils import normalize, RANDOM_SEQUENCE, REVERSED_RANDOM_SEQUENCE, MOCK_RETURN, success_score
 from symai import core_ext, Symbol, Expression, Interface, Function
 from symai.utils import toggle_test
 
@@ -55,75 +55,76 @@ class MultiModalExpression(Expression):
         self.func        = Function("Summarize the content:")
         self.category    = Category()
 
-    def detect_option(self, assertion):
-        option       = assertion()
+    def detect_option(self, aggregate, assertion):
+        option       = assertion()                                                                     | aggregate.category.option
 
         # testing the category detection accuracy
-        category = self.choice(self.category.options.values(), default='unknown', temperature=0.0)
-        score    = category.measure(self.category.options[option])
+        category = self.choice(self.category.options.values(), default='unknown', temperature=0.0)     | aggregate.category.category
+        score    = category.measure(self.category.options[option])                                     | aggregate.category.score
 
         return option, score
 
-    def forward(self, assertion, presets, **kwargs):
+    def forward(self, aggregate, assertion, presets, **kwargs):
         res     = None
         scoring = []
+        success = False
         # detect the type of expression
-        option, score = self.detect_option(assertion)
+        option, score = self.detect_option(aggregate, assertion)
         scoring.append(score)
 
         # mathematical formula
         if option == 0:
             ref_formula, instance_type, details  = presets()
-            formula  = self.extract('mathematical formula')
-            score    = ref_formula.measure(formula)
+            ref_formula = Symbol(ref_formula)                                           | aggregate.ref_formula
+            formula     = self.extract('mathematical formula')                          | aggregate.formula
+            score       = ref_formula.measure(formula)                                  | aggregate.formula_score
             scoring.append(score)
             # subtypes of mathematical formula
             if formula.isinstanceof(LINEAR_FUNCTION, temperature=0.0):
-                if instance_type == LINEAR_FUNCTION:
-                    scoring.append(1.0)
-                else:
-                    scoring.append(0.0)
-                answer   = details
+                score    = (1.0 if instance_type == LINEAR_FUNCTION else 0.0)           | aggregate.linear_function.score
+                scoring.append(score)
+                answer   = details                                                      | aggregate.linear_function.answer
                 # prepare for wolframalpha
                 question = self.extract('question sentence')
                 req      = question.extract('what is requested?')
                 x        = self.extract('coordinate point (.,.)') # get coordinate point / could also ask for other points
                 query    = formula | f', point x = {x}' | f', solve {req}' # concatenate to the question and formula
                 res      = self.solver(query)
-                score    = answer.measure(res)
+                score    = answer.measure(res)                                          | aggregate.linear_function.score
                 scoring.append(score)
+                success  = True
 
             elif formula.isinstanceof(NUMBER_COMPARISON, temperature=0.0):
-                if instance_type == NUMBER_COMPARISON:
-                    scoring.append(1.0)
-                else:
-                    scoring.append(0.0)
-                answer   = details
-                res      = self.solver(formula) # send directly to wolframalpha
-                if res == answer:
-                    scoring.append(1.0)
-                else:
-                    scoring.append(0.0)
+                score    = (1.0 if instance_type == NUMBER_COMPARISON else 0.0)         | aggregate.number_comparison.score
                 scoring.append(score)
+                answer   = details                                                      | aggregate.number_comparison.answer
+                res      = self.solver(formula) # send directly to wolframalpha
+                score    = (1.0 if res == answer else 0.0)                              | aggregate.number_comparison.score
+                scoring.append(score)
+                success  = True
 
             else:
-                raise Exception('Unknown formula type')
+                # no score for other types of mathematical formula
+                score    = 0.0                                                          | aggregate.unknown.score
+                scoring.append(score)
+                success  = False
 
         # website content scraping and crawling
         elif option == 1:
             ori_url, page, content_sym, base_score, rand_score = presets()
-            ori_url_sym = Symbol(ori_url)
-            url         = self.extract('url')
-            score       = ori_url_sym.measure(url)
+            ori_url_sym = Symbol(ori_url)                                                           | aggregate.website_scraping.ori_url
+            url         = self.extract('url')                                                       | aggregate.website_scraping.gen_url
+            score       = ori_url_sym.measure(url)                                                  | aggregate.website_scraping.score
             scoring.append(score)
-            res         = self.func(page)
+            res         = self.func(page)                                                           | aggregate.website_scraping.res
             # normalize the score towards the original content
-            score       = content_sym.measure(res, normalize=normalize(base_score, rand_score))
+            score       = content_sym.measure(res, normalize=normalize(base_score, rand_score))     | aggregate.website_scraping.score
             scoring.append(score)
+            success     = True
 
         # search engine query
         elif option == 2:
-            answer = presets()
+            answer = presets()                                                                      | aggregate.search_engine.answer
 
             if kwargs.get('real_time'):
                 res = self.search(self.value)
@@ -132,14 +133,15 @@ class MultiModalExpression(Expression):
                 snippet_path = Path(__file__).parent / "snippets" / "google_organic_results_20240111_query=What-is-sulfuric-acid.txt"
                 res = open(snippet_path, "r").read()
 
-            res   = Symbol(res)
-            res   = res.extract("The answer based on the CDC source.")
-            score = res.measure(answer)
+            res     = Symbol(res)                                                                   | aggregate.search_engine.res
+            res     = res.extract("The answer based on the CDC source.")
+            score   = res.measure(answer)                                                           | aggregate.search_engine.score
             scoring.append(score)
+            success = True
 
         # optical character recognition
         elif option == 3:
-            answer = presets()
+            answer  = presets()                                                                     | aggregate.ocr_engine.answer
             if kwargs.get('real_time'):
                 res = self.ocr((Path(__file__).parent / "assets" / "sample_bill.jpg").as_posix())
             else:
@@ -147,9 +149,10 @@ class MultiModalExpression(Expression):
                 res = open(snippet_path, "r").read()
                 res = Symbol(res)
 
-            res = res.extract(self.value)
-            score = res.measure(answer)
+            res     = res.extract(self.value)                                                       | aggregate.ocr_engine.res
+            score   = res.measure(answer)                                                           | aggregate.ocr_engine.score
             scoring.append(score)
+            success = True
 
         # image rendering
         # elif option == 4:
@@ -167,9 +170,11 @@ class MultiModalExpression(Expression):
         #     res   = self.transcribe(audio)
 
         else:
-            raise Exception('Unknown expression type')
+            score   = 0.0                                                                           | aggregate.unknown.score
+            scoring.append(0.0)
+            success = False
 
-        return scoring
+        return success, scoring
 
 
 @toggle_test(ACTIVE, default=MOCK_RETURN)
@@ -204,52 +209,55 @@ The Microsoft
     val  = f"crawl the news site from {url}"
     expr = MultiModalExpression(val)
 
-    content_sym = Symbol(content)
-    summary_sym = Symbol(summary)
-    base_score  = content_sym.measure(summary_sym)
-    rand_score  = content_sym.measure(Symbol(RANDOM_SEQUENCE))
-    scoring     = expr(lambda: 1, lambda: (url, content, content_sym, base_score, rand_score))
+    content_sym   = Symbol(content)                                                                 | aggregate.content
+    summary_sym   = Symbol(summary)                                                                 | aggregate.summary
+    base_score    = content_sym.measure(summary_sym)                                                | aggregate.content_score
+    rand_seq      = Symbol([RANDOM_SEQUENCE, REVERSED_RANDOM_SEQUENCE]).mean(axis=0)                | aggregate.rand_seq
+    rand_score    = content_sym.measure(rand_seq)                                                   | aggregate.rand_score
+    succ, scoring = expr(aggregate,
+                       lambda: 1, lambda: (url, content, content_sym, base_score, rand_score))
 
-    return True, {'scores': scoring}
+    return succ, {'scores': scoring}
 
 
 @toggle_test(ACTIVE, default=MOCK_RETURN)
 def test_search_engine(aggregate):
-    query  = "What is sulfuric acid?"
+    query         = "What is sulfuric acid?"
 
     # Let's test whether or not it can extract the answer based on the CDC source.
-    answer  = Symbol("Sulfuric acid (H2S04) is a corrosive substance, destructive to the skin, eyes, teeth, and lungs. Severe exposure can result in death.")
-    expr    = MultiModalExpression(query)
-    scoring = expr(lambda: 2, lambda: answer, real_time=False)
+    answer        = Symbol("Sulfuric acid (H2S04) is a corrosive substance, destructive to the skin, eyes, teeth, and lungs. Severe exposure can result in death.")
+    expr          = MultiModalExpression(query)
+    succ, scoring = expr(aggregate, lambda: 2, lambda: answer, real_time=False)
 
-    return True, {'scores': scoring}
+    return succ, {'scores': scoring}
 
 
 @toggle_test(ACTIVE, default=MOCK_RETURN)
 def test_linear_function_computation(aggregate):
-    query   = Symbol('What is the y-coordinate of the point where this line crosses the y-axis?')
-    val     = Symbol("A line parallel to y = 4x + 6 passes through a point P=(x1=5, y1=10).")
-    expr    = MultiModalExpression(query)
-    scoring = expr(lambda: 0, lambda: (Symbol('y = 4x + 6, P=(x1=5, y1=10), solve y-coordinate'), Symbol(LINEAR_FUNCTION), val))
+    query         = Symbol('What is the y-coordinate of the point where this line crosses the y-axis?')
+    val           = Symbol("A line parallel to y = 4x + 6 passes through a point P=(x1=5, y1=10).")
+    expr          = MultiModalExpression(query)
+    succ, scoring = expr(aggregate, lambda: 0, lambda: ('y = 4x + 6, P=(x1=5, y1=10), solve y-coordinate', Symbol(LINEAR_FUNCTION), val))
 
-    return True, {'scores': scoring}
+    return succ, {'scores': scoring}
 
 
 @toggle_test(ACTIVE, default=MOCK_RETURN)
 def test_comparison(aggregate):
-    val  = Symbol("is 100044347 bigger than 129981063.472?")
-    expr = MultiModalExpression(val)
-    res  = expr(lambda: 0, lambda: (Symbol('100044347 > 129981063.472'), Symbol(NUMBER_COMPARISON), False))
-    assert res, f'Failed to find yes in {str(res)}'
+    val        = Symbol("is 100044347 bigger than 129981063.472?")
+    expr       = MultiModalExpression(val)
+    succ, res  = expr(aggregate, lambda: 0, lambda: ('100044347 > 129981063.472', Symbol(NUMBER_COMPARISON), False))
+
+    return succ, {'scores': res}
 
 
 @toggle_test(ACTIVE, default=MOCK_RETURN)
 def test_ocr_engine(aggregate):
-    query   = "Extract the current balance from the bill image."
+    query         = "Extract the current balance from the bill image."
 
-    answer = Symbol("$ 21,920.37")
-    expr   = MultiModalExpression(query)
-    scoring = expr(lambda: 3, lambda: answer, real_time=False)
+    answer        = Symbol("$ 21,920.37")
+    expr          = MultiModalExpression(query)
+    succ, scoring = expr(aggregate, lambda: 3, lambda: answer, real_time=False)
 
-    return True, {'scores': scoring}
+    return succ, {'scores': scoring}
 
