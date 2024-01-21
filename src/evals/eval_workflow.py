@@ -18,6 +18,7 @@ from collections import defaultdict, deque
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Dict, List, Optional, Union
+from pathlib import Path
 
 from symai import Expression, Function, Interface, Symbol
 from symai.backend.engines.index.engine_vectordb import VectorDBIndexEngine
@@ -31,9 +32,10 @@ from src.utils import MOCK_RETURN, RANDOM_SEQUENCE
 ACTIVE = False
 LOG = lambda msg, active=True: print(f"DEBUG:root:\n{msg}") if active else ""
 
-READER = FileReader()
-GOOGLE_RESULTS = READER("/Users/xmachine/Desktop/google_organic_results_20240121_query=Search-for-U-235.txt")
-WIKI_PAGE      = READER("/Users/xmachine/Desktop/wiki_page_20240121.txt")
+reader = FileReader()
+dir_path = Path(__file__).parent.absolute() / "snippets"
+GOOGLE_RESULTS = reader((dir_path / "google_organic_results_20240121_query=Search-for-U-235.txt").as_posix())
+WIKI_PAGE      = reader((dir_path / "wiki_page_20240121.txt").as_posix())
 
 GOAL = "Search for U-235, access the Wikipedia page, find out what is the half-life of U-235, and then take the binary logarithm of the half-life."
 CAPABILITIES = {
@@ -121,6 +123,7 @@ SOLUTION = {
     }
 }
 
+
 @dataclass
 class Setup:
     goal: str
@@ -128,6 +131,7 @@ class Setup:
     capabilities: Dict
     examples: str
     solution: Dict
+
 
 class ToolKit:
     def __init__(self, capabilities: Dict):
@@ -161,6 +165,7 @@ class ToolKit:
 
         return
 
+
 class TaskExtractor:
     def __init__(self, examples: str, choices: List):
         self.examples = examples
@@ -171,6 +176,7 @@ class TaskExtractor:
         reflection = f(data)
         task = reflection.similarity(Symbol.symbols(*self.choices)).argmax()
         return self.choices[task]
+
 
 class Memory(SlidingWindowStringConcatMemory):
     def __init__(self, token_ratio: float = 0.9, use_long_term_mem: bool = False):
@@ -267,7 +273,6 @@ class SequentialScheduler:
             self._value = self.solution[task_name]["expected_result"]
             self._update_progress(self._value, task_name)
 
-
         if subtasks is not None:
             # We execute the subtasks.
             for subtask in subtasks:
@@ -323,7 +328,7 @@ The correct answer is:
         return list(filter(lambda x: x, self._plan_as_str().split("\n"))) # Filter empty strings
 
     def _dump_results(self):
-        with open("/Users/xmachine/Desktop/results.json", "w") as f:
+        with open("/tmp/results.json", "w") as f:
             json.dump(self.results, f, indent=4)
 
 
