@@ -90,10 +90,10 @@ DUMMY_DATA = {
         f"{BENCHMARK_NAME_MAPPING['eval_computation_graphs']}": {"performance": 0.36}
     },
     f"{MODEL_NAME_MAPPING['random']}": {
-        f"{BENCHMARK_NAME_MAPPING['eval_in_context_associations']}": {"performance": 0.1},
-        f"{BENCHMARK_NAME_MAPPING['eval_multimodal_bindings']}": {"performance": 0.2},
+        f"{BENCHMARK_NAME_MAPPING['eval_in_context_associations']}": {"performance": 0.11},
+        f"{BENCHMARK_NAME_MAPPING['eval_multimodal_bindings']}": {"performance": 0.05},
         f"{BENCHMARK_NAME_MAPPING['eval_program_synthesis']}": {"performance": 0.1},
-        f"{BENCHMARK_NAME_MAPPING['eval_logic_components']}": {"performance": 0.2},
+        f"{BENCHMARK_NAME_MAPPING['eval_logic_components']}": {"performance": 0.09},
         f"{BENCHMARK_NAME_MAPPING['eval_computation_graphs']}": {"performance": 0.1}
     }
 }
@@ -372,7 +372,7 @@ def run(args):
 
     # Run benchmark
     seeds  = [42, 18, 97, 3, 200, 32, 815, 6] if not args.seeds else args.seeds
-    models = ['gpt4', 'llama', 'gpt3.5', 'zephyr', 'gemini', 'mistral', 'random'] if not args.models else args.models
+    models = ['gpt4', 'llama', 'gpt3.5', 'zephyr', 'gemini', 'mistral', 'random'] if not args.models or 'all' in args.models else args.models
     tests  = None if not args.tests or 'all' in args.tests else args.tests
     benchmark_results = benchmarker(experiments=models,
                                     n_runs=1,

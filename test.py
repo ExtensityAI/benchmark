@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-from src.func import run, BENCHMARK_NAME_MAPPING
+from src.func import run, BENCHMARK_NAME_MAPPING, MODEL_NAME_MAPPING
 
 
 def parse_args():
@@ -146,8 +146,15 @@ def create_plot(data):
     sns.set_theme(context='paper', style='whitegrid')
 
     def add_to_radar(model, color):
-        ax.plot(angles, model, color=color, linewidth=2, label=model_name)
-        ax.fill(angles, model, color=color, alpha=0.25)
+        if model_name == MODEL_NAME_MAPPING['random']:
+            val = np.max(model) # Use the maximum value to draw a circle for the random model
+            angles_circle = np.linspace(0, 2 * np.pi, 100)  # Use 100 points to make a smooth circle
+            ax.plot(angles_circle, np.full_like(angles_circle, val), '--', linewidth=2, color=color, label=model_name)
+            ax.fill(angles_circle, np.full_like(angles_circle, val), color=color, alpha=0.25)
+        else:
+            ax.plot(angles, model, color=color, linewidth=2, label=model_name)
+            ax.fill(angles, model, color=color, alpha=0.25)
+
 
     # Add each model to the radar chart
     for values, model_name in zip(values, models):
@@ -170,7 +177,7 @@ def create_plot(data):
         label.set_position((label_padding, label.get_position()[1]))
 
     # Increase the font size for the legend
-    plt.legend(loc='upper right', bbox_to_anchor=(1.15, 1.15), fontsize=label_font_size)
+    plt.legend(loc='upper right', bbox_to_anchor=(1.2, 1.2), fontsize=label_font_size)
 
     # Set tight layout
     plt.tight_layout()
