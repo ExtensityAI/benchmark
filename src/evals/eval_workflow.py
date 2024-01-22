@@ -333,7 +333,7 @@ The correct answer is:
 
 
 @toggle_test(ACTIVE, default=MOCK_RETURN)
-def test_workflow():
+def test_workflow(aggregate):
     setup = Setup(
         goal         = GOAL,
         plan         = PLAN,

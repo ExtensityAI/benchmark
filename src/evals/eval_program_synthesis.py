@@ -173,9 +173,9 @@ _value_obj_ = QueryExpression
     except:
         score = 0.0                                                                                                     | aggregate.code_score
         scoring.append(score)
-    base_score  = solution1.measure(solution2)                                                                            | aggregate.base_score
-    rand_score  = solutions.measure(rand_seq)                                                                             | aggregate.rand_score
-    score     = solution1.measure(code, normalize=normalize(base_score, rand_score))                                        | aggregate.code_score
+    base_score  = solution1.measure(solution2)                                                                          | aggregate.base_score
+    rand_score  = solutions.measure(rand_seq)                                                                           | aggregate.rand_score
+    score       = solution1.measure(code, normalize=normalize(base_score, rand_score))                                  | aggregate.code_score
     scoring.append(score.value)
     try:
         # run the expression on the data

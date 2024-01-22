@@ -71,13 +71,13 @@ class MultiModalExpression(Expression):
         self.category    = Category()
 
     def detect_option(self, aggregate, assertion):
-        option       = assertion()                                                                                  | aggregate.category.option
+        option     = assertion()                                                                                    | aggregate.category.option
         # testing the category detection accuracy
         category   = self.choice(self.category.options.values(), default='unknown', temperature=0.0)                | aggregate.category.category
         base       = Symbol(OPTION_REFS[option])
         base_mean  = base.mean(axis=0)                                                                              | aggregate.category.base_mean
         base_score = base.cvs()                                                                                     | aggregate.category.base_score
-        rand_seq   = Symbol(RANDOMNESS).mean(axis=0)                                                                | aggregate.category.rand_seq
+        rand_seq   = Symbol(RANDOMNESS).mean(axis=0)                                                                | aggregate.category.rand_mean
         rand_score = base_mean.measure(rand_seq)                                                                    | aggregate.category.rand_score
         score      = category.measure(self.category.options[option],
                                       normalize=normalize(base_score, rand_score))                                  | aggregate.category.score
