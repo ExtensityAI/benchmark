@@ -304,11 +304,13 @@ class Evaluation(Expression):
                 try:
                     result = func(data)
                     self.memory.append(f"EXEC SUCCESS: {task}")
-                    scoring.append(1.0)
+                    score  = 1.0                                                                               | aggregate.score
+                    scoring.append(score)
                 except:
                     result = None
                     self.memory.append(f"ERROR: {func.__class__} raised an exception. {task}")
-                    scoring.append(0.0)
+                    score  = 0.0                                                                               | aggregate.score
+                    scoring.append(score)
                     succ   = False
                 # Evaluate the result of the program.
                 self.eval(task, test, result, self.memory)
@@ -317,6 +319,10 @@ class Evaluation(Expression):
                 scoring.append(score.value)
                 # increment the iteration counter
                 n_iter    += 1
+        # add the final score
+        if len(scoring) <= 0:
+            score = 0.0                                                                                        | aggregate.score
+            scoring.append(score)
         # Return the final result.
         return succ, scoring
 

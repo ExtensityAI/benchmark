@@ -9,6 +9,21 @@ from symai.utils import toggle_test
 ACTIVE = True
 
 
+OPTION0_BASE_REF = ['Mathematics related topic',
+                    'MATHEMATICS RELATED TOPIC',
+                    'mathematics and related topics']
+OPTION1_BASE_REF = ['Website Content Scraping and Crawling',
+                    'web content scraping and crawling',
+                    'WEBSITE CONTENT RELATED TOPICS']
+OPTION2_BASE_REF = ['Search Engine Query',
+                    'search engine query',
+                    'SEARCH ENGINE QUERY']
+OPTION3_BASE_REF = ['Optical Character Recognition',
+                    'optical character recognition',
+                    'OPTICAL CHARACTER RECOGNITION']
+OPTION_REFS      = [OPTION0_BASE_REF, OPTION1_BASE_REF, OPTION2_BASE_REF, OPTION3_BASE_REF]
+
+
 class Category(Expression):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -56,12 +71,16 @@ class MultiModalExpression(Expression):
         self.category    = Category()
 
     def detect_option(self, aggregate, assertion):
-        option       = assertion()                                                                  | aggregate.category.option
-
+        option       = assertion()                                                                                  | aggregate.category.option
         # testing the category detection accuracy
-        category = self.choice(self.category.options.values(), default='unknown', temperature=0.0)  | aggregate.category.category
-        score    = category.measure(self.category.options[option])                                  | aggregate.category.score
-
+        category   = self.choice(self.category.options.values(), default='unknown', temperature=0.0)                | aggregate.category.category
+        base       = Symbol(OPTION_REFS[option])
+        base_mean  = base.mean(axis=0)                                                                              | aggregate.category.base_mean
+        base_score = base.cvs()                                                                                     | aggregate.category.base_score
+        rand_seq   = Symbol(RANDOMNESS).mean(axis=0)                                                                | aggregate.category.rand_seq
+        rand_score = base_mean.measure(rand_seq)                                                                    | aggregate.category.rand_score
+        score      = category.measure(self.category.options[option],
+                                      normalize=normalize(base_score, rand_score))                                  | aggregate.category.score
         return option, score.value
 
     def forward(self, aggregate, assertion, presets, **kwargs):
@@ -216,7 +235,7 @@ The Microsoft
     rand_seq      = Symbol(RANDOMNESS).mean(axis=0)                                                 | aggregate.rand_seq
     rand_score    = content_sym.measure(rand_seq)                                                   | aggregate.rand_score
     succ, scoring = expr(aggregate,
-                       lambda: 1, lambda: (url, content, content_sym, base_score, rand_score))
+                         lambda: 1, lambda: (url, content, content_sym, base_score, rand_score))
     return succ, {'scores': scoring}
 
 

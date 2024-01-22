@@ -9,16 +9,17 @@ from src.func import run, BENCHMARK_NAME_MAPPING
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Run the benchmark.')
-    parser.add_argument('--context_associations', action='store_true', help='Run the in-context associations benchmark.')
-    parser.add_argument('--multimodal_bindings', action='store_true', help='Run the multimodal bindings benchmark.')
-    parser.add_argument('--program_synthesis',   action='store_true', help='Run the program synthesis benchmark.')
-    parser.add_argument('--logic_components',    action='store_true', help='Run the logic components benchmark.')
-    parser.add_argument('--computation_graphs',  action='store_true', help='Run the computation graphs benchmark.')
-    parser.add_argument('--all',    action='store_true', help='Run all benchmarks.')
-    parser.add_argument('--dummy',  action='store_true', help='Run the dummy benchmark.')
-    parser.add_argument('--models', help='Run the specified models.', default=['all'], type=str, nargs='+')
-    parser.add_argument('--seeds',  help='Run the specified seeds.',  default=['all'], type=int, nargs='+')
-    parser.add_argument('--tests', help='Run only specific tests.', default=['all'], type=str, nargs='+')
+    parser.add_argument('--context_associations', help='Run the in-context associations benchmark.', action='store_true')
+    parser.add_argument('--multimodal_bindings',  help='Run the multimodal bindings benchmark.',     action='store_true')
+    parser.add_argument('--program_synthesis',    help='Run the program synthesis benchmark.',       action='store_true')
+    parser.add_argument('--logic_components',     help='Run the logic components benchmark.',        action='store_true')
+    parser.add_argument('--computation_graphs',   help='Run the computation graphs benchmark.',      action='store_true')
+    parser.add_argument('--all',                  help='Run all benchmarks.',                        action='store_true')
+    parser.add_argument('--dummy',                help='Run the dummy benchmark.',                   action='store_true')
+    parser.add_argument('--verbose',              help='Print additional information.',              action='store_true')
+    parser.add_argument('--models',               help='Run the specified models.',                  default=['all'],       type=str, nargs='+')
+    parser.add_argument('--seeds',                help='Run the specified seeds.',                   default=['all'],       type=int, nargs='+')
+    parser.add_argument('--tests',                help='Run only specific tests.',                   default=['all'],       type=str, nargs='+')
     return parser.parse_args()
 
 
@@ -186,4 +187,3 @@ if __name__ == '__main__':
     results = run(args)
     create_latex_result(results)
     create_plot(results)
-

@@ -19,13 +19,14 @@ class MockupResult(Result):
 
 
 class MockupEngine(Engine):
-    def __init__(self):
+    def __init__(self, verbose: bool = False):
         super().__init__()
         self.logger         = logging.getLogger('mockup')
         self.logger.setLevel(logging.DEBUG)
         self.config         = SYMAI_CONFIG
         self.seed           = None
         self.except_remedy  = None
+        self.verbose        = verbose
 
     def id(self) -> str:
         return super().id() # default to unregistered
@@ -68,8 +69,10 @@ class MockupEngine(Engine):
         if top_k is not None:
             model_kwargs['top_k'] = top_k
 
-        self.logger.debug(f"prompts: {prompts}")
-        self.logger.debug(f"model_kwargs: {model_kwargs}")
+        if self.verbose:
+            self.logger.debug(f"kwargs: {kwargs}")
+            self.logger.debug(f"prompts: {prompts}")
+            self.logger.debug(f"model_kwargs: {model_kwargs}")
 
         # Create multipart/form-data payload
         # Since the LLaMA server expects a JSON payload, we construct JSON data

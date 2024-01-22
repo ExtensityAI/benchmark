@@ -129,6 +129,7 @@ class EvaluateBenchmark(Expression):
                        eval_program_synthesis: Optional[List[Callable]] = None,
                        eval_logic_components: Optional[List[Callable]] = None,
                        eval_computation_graphs: Optional[List[Callable]] = None,
+                       verbose: bool = False,
                        **kwargs):
         super().__init__(**kwargs)
         self.eval_in_context_associations = eval_in_context_associations
@@ -136,7 +137,8 @@ class EvaluateBenchmark(Expression):
         self.eval_program_synthesis       = eval_program_synthesis
         self.eval_logic_components        = eval_logic_components
         self.eval_computation_graphs      = eval_computation_graphs
-        self.aggregator = Aggregator()
+        self.verbose                      = verbose
+        self.aggregator                   = Aggregator()
         # set global primitives for symbolic AI
         GlobalSymbolPrimitive('measure', measure)
         GlobalSymbolPrimitive('mean', embedding_mean)
@@ -180,7 +182,7 @@ class EvaluateBenchmark(Expression):
             EngineRepository.register('neurosymbolic', engine, allow_engine_override=True)
         elif experiment == 'random':
             # initialize the engine
-            engine = MockupEngine()
+            engine = MockupEngine(verbose=self.verbose)
             EngineRepository.register('neurosymbolic', engine, allow_engine_override=True)
 
         assert engine is not None, f'Engine {experiment} not found!'
@@ -364,7 +366,8 @@ def run(args):
         eval_multimodal_bindings=multimodal_bindings_tests,
         eval_program_synthesis=program_synthesis_tests,
         eval_logic_components=logic_components_tests,
-        eval_computation_graphs=computation_graphs_tests
+        eval_computation_graphs=computation_graphs_tests,
+        verbose=args.verbose
     )
 
     # Run benchmark
