@@ -44,7 +44,7 @@ No other functions or explanations are required.
     # remove the chance of simply rephrasing the task description
     rand_score = solutions.measure(random_seq)                                                                          | aggregate.conv_rand_score
     score      = solutions.measure(raw_res, normalize=normalize(base_score, rand_score))                                | aggregate.conv_score
-    scoring.append(score)
+    scoring.append(score.value)
 
     # Read the source code from files
     solution1  = Symbol(solution1, callables=[Call('measure', ast_measure)])
@@ -52,7 +52,7 @@ No other functions or explanations are required.
     base_score = solution1.measure(solution2)                                                                           | aggregate.ast_base_score
     rand_score = (0.5*(rand_ast_measure(solution1) + rand_ast_measure(solution2)))                                      | aggregate.ast_rand_score
     score      = solution1.measure(code, normalize=normalize(base_score, rand_score))                                   | aggregate.ast_score
-    scoring.append(score)
+    scoring.append(score.value)
 
     # Execute the code
     code       = reader(template).str().replace('{TODO}', str(code))
@@ -65,7 +65,7 @@ No other functions or explanations are required.
         ori    = reader(os.path.join(cur_file_dir, 'snippets/latex_templating_output.txt'))                             | aggregate.code_solution
         # no normalization is needed here since the output has to be an exact match
         score  = out.measure(ori)                                                                                       | aggregate.code_score
-        scoring.append(score)
+        scoring.append(score.value)
         success = True
     except Exception as e:
         score  = 0.0                                                                                                    | aggregate.code_score
@@ -77,13 +77,12 @@ No other functions or explanations are required.
 class APIExecutor(Expression):
     def __init__(self, verbose=False, **kwargs):
         super().__init__(**kwargs)
-        self.builder   = APIBuilder()
-        self.executor  = StackTraceRetryExecutor(retries=0) # disable retries
-        self._verbose  = verbose
-        self._request  = None
-        self._code     = None
-        self._result   = None
-        self._code_sim = None
+        self.builder     = APIBuilder()
+        self.executor    = StackTraceRetryExecutor(retries=0) # disable retries
+        self._verbose    = verbose
+        self._request    = None
+        self._code       = None
+        self._result     = None
 
     @property
     def _runnable(self):
@@ -96,19 +95,21 @@ class APIExecutor(Expression):
         # Generate the code to implement the API call
         self._code    = self.builder(self._request)
         if self._verbose: print('[GENERATED_CODE]', self._code)
-        base_sim      = code.measure(code2)                                                                             | aggregate.base_sim
-        rand_sim      = rand.measure(refs)                                                                              | aggregate.rand_sim
-        code_sim      = code.measure(self._code, normalize=normalize(base_sim, rand_sim))                               | aggregate.code_sim
+        base_score    = code.measure(code2)                                                                             | aggregate.base_score
+        rand_score    = rand.measure(refs)                                                                              | aggregate.rand_score
+        code_score    = code.measure(self._code, normalize=normalize(base_score, rand_score))                           | aggregate.code_score
+        code_score    = code_score.value
         # Execute the code to define the 'run' function
         try:
             self._result  = self.executor(self._code, request=self._request)                                            | aggregate.output
             if self._verbose: print('[RESULT]:', self._result)
-            web_sim       = answer.measure(self._result)                                                                | aggregate.web_sim
+            web_score     = answer.measure(self._result)                                                                | aggregate.web_score
+            web_score     = web_score.value
         except Exception as e:
             self._result  = str(e)
-            web_sim       = 0.0                                                                                         | aggregate.web_sim
+            web_score     = 0.0                                                                                         | aggregate.web_score
         self._value       = self._result
-        return [code_sim, web_sim]
+        return [code_score, web_score]
 
 
 @toggle_test(ACTIVE, default=MOCK_RETURN)
@@ -172,16 +173,16 @@ _value_obj_ = QueryExpression
     except:
         score = 0.0                                                                                                     | aggregate.code_score
         scoring.append(score)
-    base_sim  = solution1.measure(solution2)                                                                            | aggregate.base_sim
-    rand_sim  = solutions.measure(rand_seq)                                                                             | aggregate.rand_sim
-    sim       = solution1.measure(code, normalize=normalize(base_sim, rand_sim))                                        | aggregate.code_sim
-    scoring.append(sim)
+    base_score  = solution1.measure(solution2)                                                                            | aggregate.base_score
+    rand_score  = solutions.measure(rand_seq)                                                                             | aggregate.rand_score
+    score     = solution1.measure(code, normalize=normalize(base_score, rand_score))                                        | aggregate.code_score
+    scoring.append(score.value)
     try:
         # run the expression on the data
         res   = query('Hello my name is Max and I am 20 years old.')                                                    | aggregate.query_res
-        sim   = res.measure('Max')                                                                                      | aggregate.query_sim
-        scoring.append(sim)
+        score = res.measure('Max')                                                                                      | aggregate.query_score
+        scoring.append(score.value)
     except:
-        score = 0.0                                                                                                     | aggregate.query_sim
+        score = 0.0                                                                                                     | aggregate.query_score
         scoring.append(score)
     return True, {'scores': scoring}

@@ -6,7 +6,7 @@ from symai import core_ext, Symbol, Expression, Interface, Function
 from symai.utils import toggle_test
 
 
-ACTIVE = False
+ACTIVE = True
 
 
 class Category(Expression):
@@ -62,7 +62,7 @@ class MultiModalExpression(Expression):
         category = self.choice(self.category.options.values(), default='unknown', temperature=0.0)  | aggregate.category.category
         score    = category.measure(self.category.options[option])                                  | aggregate.category.score
 
-        return option, score
+        return option, score.value
 
     def forward(self, aggregate, assertion, presets, **kwargs):
         res     = None
@@ -78,7 +78,7 @@ class MultiModalExpression(Expression):
             ref_formula = Symbol(ref_formula)                                                       | aggregate.ref_formula
             formula     = self.extract('mathematical formula')                                      | aggregate.formula
             score       = ref_formula.measure(formula)                                              | aggregate.formula_score
-            scoring.append(score)
+            scoring.append(score.value)
             # subtypes of mathematical formula
             if self.isinstanceof(LINEAR_ALGEBRA, temperature=0.0):
                 score    = (1.0 if instance_type == LINEAR_ALGEBRA else 0.0)                        | aggregate.linear_function.score
@@ -93,7 +93,7 @@ class MultiModalExpression(Expression):
                 base_score = solutions.cvs()                                                        | aggregate.number_comparison.base_score
                 rand_score = answer.measure(rand_seq)                                               | aggregate.number_comparison.rand_score
                 score      = answer.measure(sol_mean, normalize=normalize(base_score, rand_score))  | aggregate.number_comparison.answer_score
-                scoring.append(score)
+                scoring.append(score.value)
                 success    = True
 
             elif self.isinstanceof(NUMBER_COMPARISON, temperature=0.0):
@@ -117,11 +117,11 @@ class MultiModalExpression(Expression):
             ori_url_sym = Symbol(ori_url)                                                           | aggregate.website_scraping.ori_url
             url         = self.extract('url')                                                       | aggregate.website_scraping.gen_url
             score       = ori_url_sym.measure(url)                                                  | aggregate.website_scraping.score
-            scoring.append(score)
+            scoring.append(score.value)
             res         = self.func(page)                                                           | aggregate.website_scraping.res
             # normalize the score towards the original content
             score       = content_sym.measure(res, normalize=normalize(base_score, rand_score))     | aggregate.website_scraping.score
-            scoring.append(score)
+            scoring.append(score.value)
             success     = True
 
         # search engine query
@@ -138,7 +138,7 @@ class MultiModalExpression(Expression):
             res     = Symbol(res)                                                                   | aggregate.search_engine.res
             res     = res.extract("The answer based on the CDC source.")
             score   = res.measure(answer)                                                           | aggregate.search_engine.score
-            scoring.append(score)
+            scoring.append(score.value)
             success = True
 
         # optical character recognition
@@ -153,7 +153,7 @@ class MultiModalExpression(Expression):
 
             res     = res.extract(self.value)                                                       | aggregate.ocr_engine.res
             score   = res.measure(answer)                                                           | aggregate.ocr_engine.score
-            scoring.append(score)
+            scoring.append(score.value)
             success = True
 
         # image rendering
@@ -173,7 +173,7 @@ class MultiModalExpression(Expression):
 
         else:
             score   = 0.0                                                                           | aggregate.unknown.score
-            scoring.append(0.0)
+            scoring.append(score)
             success = False
 
         return success, scoring
@@ -231,7 +231,7 @@ def test_search_engine(aggregate):
     return succ, {'scores': scoring}
 
 
-@toggle_test(True, default=MOCK_RETURN)
+@toggle_test(ACTIVE, default=MOCK_RETURN)
 def test_linear_function_computation(aggregate):
     query         = Symbol('Analyse the following vectors and asses if (2, -11, 2) and (14, 2, 2) are linearly dependent?')
     ref           = Symbol("(2, -11, 2) and (14, 2, 2) are linearly independent.")

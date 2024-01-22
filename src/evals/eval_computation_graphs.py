@@ -4,7 +4,7 @@ from pathlib import Path
 from datetime import datetime
 from ast import List
 
-from src.utils import MOCK_RETURN, RANDOMNESS
+from src.utils import MOCK_RETURN, RANDOMNESS, normalize
 from src.evals.components.paper import Paper, RelatedWork, Cite, Abstract, Title, Method, Source
 
 from symai import Symbol, Expression, Function, Interface
@@ -15,7 +15,7 @@ from symai.extended.os_command import OSCommand
 from symai.components import GraphViz
 
 
-ACTIVE = False
+ACTIVE = True
 DataDictionary = Symbol({})
 
 
@@ -246,9 +246,9 @@ class SequentialScheduler(Expression):
 class Evaluate(Expression):
     def forward(self, task, result, memory):
         # Evaluate the result of the program.
-        sim     = task.measure(result)
-        success = sim > 0.5 and 'finished successfully' in memory.join()
-        memory.append(f"EVAL: {task} | Similarity: {sim} | Success: {success}")
+        score   = task.measure(result)
+        success = score > 0.5 and 'finished successfully' in memory.join()
+        memory.append(f"EVAL: {task} | Similarity: {score} | Success: {success}")
         # TODO: ...
 
 
@@ -284,12 +284,13 @@ class Evaluation(Expression):
         print(f"Extracted Tasks: {task_list}")
         return task_list
 
-    def forward(self, instruct):
+    def forward(self, aggregate, instruct):
         # Set the target goal.
         self.target = Symbol(instruct)
         # Extract all tasks from the system instruction.
         self.tasks  = self.extract(instruct)
-        sim         = 0.0
+        scoring     = []
+        succ        = True
         n_iter      = 0
         result      = None
         task        = 'start'
@@ -298,33 +299,36 @@ class Evaluation(Expression):
             # Schedule the next task.
             task, test, func, data = self.schedule(self.tasks, self.memory)
             # Execute sub-routine until the target goal is reached.
-            while task is not None and sim < self.halt_threshold and n_iter < self.max_iterations:
+            while task is not None and score < self.halt_threshold and n_iter < self.max_iterations:
                 # Execute the task.
                 try:
                     result = func(data)
                     self.memory.append(f"EXEC SUCCESS: {task}")
+                    scoring.append(1.0)
                 except:
                     result = None
                     self.memory.append(f"ERROR: {func.__class__} raised an exception. {task}")
+                    scoring.append(0.0)
+                    succ   = False
                 # Evaluate the result of the program.
                 self.eval(task, test, result, self.memory)
                 # update the measure
-                sim        = Symbol(result).measure(self.target)
+                score      = Symbol(result).measure(self.target)
+                scoring.append(score.value)
                 # increment the iteration counter
                 n_iter    += 1
         # Return the final result.
-        return result
+        return succ, scoring
 
 
 @toggle_test(ACTIVE, default=MOCK_RETURN)
 def test_program(aggregate):
-    expr   = Evaluation()
-    reader = FileReader()
+    expr         = Evaluation()
+    reader       = FileReader()
     cur_file_dir = os.path.dirname(os.path.abspath(__file__))
-    target = reader(os.path.join(cur_file_dir, 'snippets/richard_feynman_summary.txt'))
-    res    = expr("Write a paper about the SymbolicAI framework from GitHub https://github.com/ExtensityAI/symbolicai. Include citations and references from the papers directory ./snippets/papers.")
-    print(res)
-    return True, {'scores': [1.0]}
+    target       = reader(os.path.join(cur_file_dir, 'snippets/richard_feynman_summary.txt'))
+    succ, scores = expr(aggregate, "Write a paper about the SymbolicAI framework from GitHub https://github.com/ExtensityAI/symbolicai. Include citations and references from the papers directory ./snippets/papers.")
+    return succ, {'scores': scores}
 
 
 SUB_ROUTINE_ACTIVE = False
@@ -420,11 +424,12 @@ def test_sub_routine_os_commands(aggregate):
     return res, {'scores': [float(res)]}
 
 
-@toggle_test(True, default=MOCK_RETURN)
+@toggle_test(ACTIVE, default=MOCK_RETURN)
 def test_sub_routine_create_paper(aggregate):
     # define the task
     reader     = FileReader()
-    rand_seq   = Symbol(RANDOMNESS).mean(axis=0)                                                               | aggregate.rand_seq
+    rand_seq   = Symbol(RANDOMNESS)
+    rand_mean  = rand_seq.mean()                                                                               | aggregate.rand_mean
     dir_path   = Path(__file__).parent.absolute() / "snippets"
     references = list(map(reader, [
         (dir_path / "paper/ref/reference_section_framework.txt").as_posix()                                    | aggregate.ref_method,
@@ -432,6 +437,13 @@ def test_sub_routine_create_paper(aggregate):
         (dir_path / "paper/ref/reference_abstract.txt").as_posix()                                             | aggregate.ref_abstract,
         (dir_path / "paper/ref/reference_title.txt").as_posix()                                                | aggregate.ref_title,
         (dir_path / "paper/ref/reference_paper.txt").as_posix()                                                | aggregate.ref_paper
+    ]))
+    trajectories = list(map(reader, [
+        (dir_path / "paper/traj/reference_section_framework.txt").as_posix()                                   | aggregate.traj_method,
+        (dir_path / "paper/traj/reference_section_relatedwork.txt").as_posix()                                 | aggregate.traj_related_work,
+        (dir_path / "paper/traj/reference_abstract.txt").as_posix()                                            | aggregate.traj_abstract,
+        (dir_path / "paper/traj/reference_title.txt").as_posix()                                               | aggregate.traj_title,
+        (dir_path / "paper/traj/reference_paper.txt").as_posix()                                               | aggregate.traj_paper
     ]))
     scoring    = []
     task       = Symbol("[Objective]\nWrite a paper about the SymbolicAI framework. Include citations and references from the referenced papers. Follow primarily the [Task] instructions.")
@@ -457,42 +469,37 @@ def test_sub_routine_create_paper(aggregate):
 
     # validate intermediate results
     method       = expr.linker.find('Method')                                                                  | aggregate.gen_method
-    rand_sim     = rand_seq.measure(method)                                                                    | aggregate.rand_method
-    sim          = references[0].measure(method)                                                               | aggregate.sim_method
-    scoring.append(sim)
+    rand_score   = rand_mean.measure(method)                                                                   | aggregate.rand_method
+    base_score   = trajectories[0].measure(references[0])                                                      | aggregate.base_method
+    score        = references[0].measure(method, normalize=normalize(base_score, rand_score))                  | aggregate.method_score
+    scoring.append(score.value)
 
     related_work = expr.linker.find('RelatedWork')                                                             | aggregate.gen_related_work
-    rand_sim     = rand_seq.measure(related_work)                                                              | aggregate.rand_related_work
-    sim          = references[1].measure(related_work)                                                         | aggregate.sim_related_work
-    scoring.append(sim)
+    rand_score   = rand_mean.measure(related_work)                                                             | aggregate.rand_related_work
+    base_score   = trajectories[1].measure(references[1])                                                      | aggregate.base_related_work
+    score        = references[1].measure(related_work, normalize=normalize(base_score, rand_score))            | aggregate.relatedwork_score
+    scoring.append(score.value)
 
     abstract     = expr.linker.find('Abstract')                                                                | aggregate.gen_abstract
-    rand_sim     = rand_seq.measure(abstract)                                                                  | aggregate.rand_abstract
-    sim          = references[2].measure(abstract)                                                             | aggregate.sim_abstract
-    scoring.append(sim)
+    rand_score   = rand_mean.measure(abstract)                                                                 | aggregate.rand_abstract
+    base_score   = trajectories[2].measure(references[2])                                                      | aggregate.base_abstract
+    score        = references[2].measure(abstract, normalize=normalize(base_score, rand_score))                | aggregate.abstract_score
+    scoring.append(score.value)
 
     title        = expr.linker.find('Title')                                                                   | aggregate.gen_title
-    rand_sim     = rand_seq.measure(title)                                                                     | aggregate.rand_title
-    sim          = references[3].measure(title)                                                                | aggregate.sim_title
-    scoring.append(sim)
+    rand_score   = rand_mean.measure(title)                                                                    | aggregate.rand_title
+    base_score   = trajectories[3].measure(references[3])                                                      | aggregate.base_title
+    score        = references[3].measure(title, normalize=normalize(base_score, rand_score))                   | aggregate.title_score
+    scoring.append(score.value)
 
     # combined results
-    rand_sim     = rand_seq.measure(paper)                                                                     | aggregate.rand_paper
-    sim          = references[4].measure(paper)                                                                | aggregate.sim_paper
-    scoring.append(sim)
+    rand_score   = rand_mean.measure(paper)                                                                    | aggregate.rand_paper
+    base_score   = trajectories[4].measure(references[4])                                                      | aggregate.base_paper
+    score        = references[4].measure(paper, normalize=normalize(base_score, rand_score))                   | aggregate.paper_score
+    scoring.append(score.value)
 
-    try:
-        # visualize the computation graph
-        GraphViz()(expr, 'results/paper.html')
-        # visualize the computation graph
-        GraphViz()(results[-1], 'results/results.html')
-        # NICE! We made it this far, here you go, have some tasty points
-        score = 1.0                                                                                             | aggregate.score
-        scoring.append(score)
-    except:
-        # Uh boiiii, back to the drawing board
-        score = 0.0                                                                                             | aggregate.score
-        scoring.append(score)
+    # visualize the computation graph
+    GraphViz()(expr, 'results/paper.html')
 
     return True, {'scores': scoring}
 
@@ -503,5 +510,5 @@ def test_cite_paper(aggregate):
     reader   = FileReader()
     solution = reader('src/evals/snippets/paper/reference_section_relatedwork.txt')
     res      = Cite(file_link='src/evals/snippets/bib/related_work/laird87.txt')
-    sim      = solution.measure(res)
-    return sim, {'scores': [sim]}
+    score    = solution.measure(res)
+    return True, {'scores': [score.value]}

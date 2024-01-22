@@ -86,11 +86,25 @@
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [
+                "--models", "random",
                 "--context_associations",
                 "--program_synthesis",
                 "--multimodal_bindings",
                 "--logic_components",
                 "--computation_graphs"
+            ]
+        },
+        {
+            "name": "Selective-Run",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/test.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "--models", "random",
+                "--computation_graphs",
+                "--tests", "test_sub_routine_create_paper"
             ]
         },
         {

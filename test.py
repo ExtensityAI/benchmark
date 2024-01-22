@@ -18,6 +18,7 @@ def parse_args():
     parser.add_argument('--dummy',  action='store_true', help='Run the dummy benchmark.')
     parser.add_argument('--models', help='Run the specified models.', default=['all'], type=str, nargs='+')
     parser.add_argument('--seeds',  help='Run the specified seeds.',  default=['all'], type=int, nargs='+')
+    parser.add_argument('--tests', help='Run only specific tests.', default=['all'], type=str, nargs='+')
     return parser.parse_args()
 
 

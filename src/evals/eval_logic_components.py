@@ -98,8 +98,8 @@ def test_factorize_formula(aggregate):
     # model based factorization
     func        = Factorization('Factorize d from the expression such that your final start with: `d + (...`:')
     res         = func(expr)                                                                                               | aggregate.generated
-    ref         = Symbol(str(fact))                                                                                             | aggregate.solution
-    rand_score  = ref.measure(random_seq)
+    ref         = Symbol(str(fact))                                                                                        | aggregate.solution
+    rand_score  = ref.measure(random_seq)                                                                                  | aggregate.rand_score
     solutions   = Symbol(["The factorized result is: d+(a+b-c)*(x-y)",
                           "We obtain: d + ( x - y ) * ( a + b - c )",
                           "(a + b - c) * (x - y) + d"])
@@ -107,7 +107,7 @@ def test_factorize_formula(aggregate):
     base_score  = solutions.cvs()                                                                                          | aggregate.solution_base_score
     # validate
     score       = ref.measure(res, normalize=normalize(base_score, rand_score))                                            | aggregate.solution_score
-    return True, {'scores': [score]}
+    return True, {'scores': [score.value]}
 
 
 @toggle_test(ACTIVE, default=MOCK_RETURN)
@@ -129,9 +129,13 @@ def test_dsl_writing_capability(aggregate):
     rand_score   = random.measure(form_means)                                                                              | aggregate.rand_score
     base_score   = formulations.cvs()                                                                                      | aggregate.base_score
     score        = form1.measure(res, normalize=normalize(base_score, rand_score))                                         | aggregate.dsl_score
-    scoring.append(score)
-    # vary basic check for syntax violations
-    if '("' in str(res) or '")' in str(res) or '",' in str(res) or '":' in str(res) or '=' in str(res):
+    scoring.append(score.value)
+    # vary basic check for syntax violations TODO: apply grammar check
+    if score < rand_score or ('("' in str(res) or \
+                              '")' in str(res) or \
+                              '",' in str(res) or \
+                              '":' in str(res) or
+                               '=' in str(res)):
         score = 0.0                                                                                                        | aggregate.score
         scoring.append(score)
         return False, {'scores': scoring}
@@ -225,6 +229,6 @@ def test_solve_puzzle(aggregate):
     solutions  = Symbol(trajectories.split("\n\n\n")).mean()                                                              | aggregate.solutions
     base_score = ref_solution.measure(solutions)                                                                          | aggregate.base_score
     score      = ref_solution.measure(res, normalize=normalize(base_score, rand_score))                                   | aggregate.gen_score
-    scoring.append(score)
+    scoring.append(score.value)
 
     return succ, {'scores': scoring}

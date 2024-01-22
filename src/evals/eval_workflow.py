@@ -144,8 +144,8 @@ class ToolKit:
         f = Function(f"Reflect and narrate in first person which of the following capabilities would be best for the task at hand: {self.capabilities.keys()}")
         # We summarize the reflection to increase the chance of the LLM picking the correct interface.
         reflection = f(query).summarize()
-        tool = reflection.similarity(Symbol.symbols(*self.capabilities.keys())).argmax()
-        interface =  self.capabilities[list(self.capabilities.keys())[tool]]
+        tool       = reflection.similarity(Symbol.symbols(*self.capabilities.keys())).argmax()
+        interface  =  self.capabilities[list(self.capabilities.keys())[tool]]
         return interface if interface.__class__.__name__ != "NoneType" else None
 
     def apply_tool(self, tool: Interface, query: Symbol, payload: Symbol = None) -> Symbol:

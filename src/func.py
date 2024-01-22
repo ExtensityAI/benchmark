@@ -197,7 +197,7 @@ class EvaluateBenchmark(Expression):
 
         return engine, rate_exception
 
-    def evaluate_experiment(self, experiments, evals, n_runs, seeds, config, results, type='eval_in_context_associations'):
+    def evaluate_experiment(self, experiments, evals, n_runs, seeds, config, results, type='eval_in_context_associations', tests=None):
         type = BENCHMARK_NAME_MAPPING[type]
 
         for experiment in experiments:
@@ -222,6 +222,10 @@ class EvaluateBenchmark(Expression):
         # set tqdm progress bar
         progress = tqdm(total=total_experiments, desc=f'Running {type} benchmark')
         for fun_name, test_func in evals:
+            # Skip tests that are not in the list of tests to run
+            if tests is not None and fun_name not in tests:
+                continue
+            # Run the test function for each seed
             for seed in seeds:
                 # Run the test function
                 for r in range(n_runs):
@@ -303,7 +307,7 @@ class EvaluateBenchmark(Expression):
             json.dump(type_results, f, indent=2)
         self.aggregator.save(f'results/{type}_aggregator.json')
 
-    def forward(self, experiments=['gpt4', 'llama', 'gpt3.5', 'zephyr', 'gemini', 'mistral', 'random'], n_runs=3, seeds=[42, 77, 97], dummy=False):
+    def forward(self, experiments=['gpt4', 'llama', 'gpt3.5', 'zephyr', 'gemini', 'mistral', 'random'], n_runs=3, seeds=[42, 77, 97], dummy=False, tests=None):
         # This dictionary will now hold the scoring for each test type
         results = {}
         for experiment in experiments:
@@ -320,23 +324,23 @@ class EvaluateBenchmark(Expression):
 
         # Evaluate in-context learning associations
         if self.eval_in_context_associations:
-            self.evaluate_experiment(experiments, self.eval_in_context_associations, n_runs, seeds, config, results, type='eval_in_context_associations')
+            self.evaluate_experiment(experiments, self.eval_in_context_associations, n_runs, seeds, config, results, type='eval_in_context_associations', tests=tests)
 
         # Evaluate multimodal bindings
         if self.eval_multimodal_bindings:
-            self.evaluate_experiment(experiments, self.eval_multimodal_bindings, n_runs, seeds, config, results, type='eval_multimodal_bindings')
+            self.evaluate_experiment(experiments, self.eval_multimodal_bindings, n_runs, seeds, config, results, type='eval_multimodal_bindings', tests=tests)
 
         # Evaluate program synthesis
         if self.eval_program_synthesis:
-            self.evaluate_experiment(experiments, self.eval_program_synthesis, n_runs, seeds, config, results, type='eval_program_synthesis')
+            self.evaluate_experiment(experiments, self.eval_program_synthesis, n_runs, seeds, config, results, type='eval_program_synthesis', tests=tests)
 
         # Evaluate components
         if self.eval_logic_components:
-            self.evaluate_experiment(experiments, self.eval_logic_components, n_runs, seeds, config, results, type='eval_logic_components')
+            self.evaluate_experiment(experiments, self.eval_logic_components, n_runs, seeds, config, results, type='eval_logic_components', tests=tests)
 
         # Evaluate computation graphs
         if self.eval_computation_graphs:
-            self.evaluate_experiment(experiments, self.eval_computation_graphs, n_runs, seeds, config, results, type='eval_computation_graphs')
+            self.evaluate_experiment(experiments, self.eval_computation_graphs, n_runs, seeds, config, results, type='eval_computation_graphs', tests=tests)
 
         # save the results file to disk
         os.makedirs('results', exist_ok=True)
@@ -366,10 +370,12 @@ def run(args):
     # Run benchmark
     seeds  = [42, 18, 97, 3, 200, 32, 815, 6] if not args.seeds else args.seeds
     models = ['gpt4', 'llama', 'gpt3.5', 'zephyr', 'gemini', 'mistral', 'random'] if not args.models else args.models
+    tests  = None if not args.tests or 'all' in args.tests else args.tests
     benchmark_results = benchmarker(experiments=models,
                                     n_runs=1,
                                     seeds=seeds,
-                                    dummy=args.dummy)
+                                    dummy=args.dummy,
+                                    tests=tests)
 
     # Print benchmark results
     print("Results:", benchmark_results)
