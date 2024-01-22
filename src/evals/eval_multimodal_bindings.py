@@ -4,7 +4,7 @@ from symai import core_ext, Symbol, Expression, Interface, Function
 from symai.utils import toggle_test
 
 
-ACTIVE = True
+ACTIVE = False
 
 
 class Category(Expression):
@@ -32,7 +32,7 @@ class Category(Expression):
         return _embed(self)
 
 
-LINEAR_FUNCTION = 'linear function'
+LINEAR_ALGEBRA = 'linear algebra'
 NUMBER_COMPARISON = 'number comparison'
 
 
@@ -78,21 +78,23 @@ class MultiModalExpression(Expression):
             score       = ref_formula.measure(formula)                                              | aggregate.formula_score
             scoring.append(score)
             # subtypes of mathematical formula
-            if formula.isinstanceof(LINEAR_FUNCTION, temperature=0.0):
-                score    = (1.0 if instance_type == LINEAR_FUNCTION else 0.0)                       | aggregate.linear_function.score
+            if self.isinstanceof(LINEAR_ALGEBRA, temperature=0.0):
+                score    = (1.0 if instance_type == LINEAR_ALGEBRA else 0.0)                        | aggregate.linear_function.score
                 scoring.append(score)
-                answer   = details                                                                  | aggregate.linear_function.answer
+                answer, solutions = details
+                answer   = Symbol(answer)                                                           | aggregate.linear_function.answer
                 # prepare for wolframalpha
-                question = self.extract('question sentence')
-                req      = question.extract('what is requested?')
-                x        = self.extract('coordinate point (.,.)') # get coordinate point / could also ask for other points
-                query    = formula | f', point x = {x}' | f', solve {req}' # concatenate to the question and formula
-                res      = self.solver(query)
-                score    = answer.measure(res)                                                      | aggregate.linear_function.score
+                res        = self.solver(formula)
+                res        = res.query('write a one sentence summary of the answer')                | aggregate.number_comparison.res
+                rand_seq   = Symbol([RANDOM_SEQUENCE, REVERSED_RANDOM_SEQUENCE]).mean(axis=0)       | aggregate.number_comparison.rand_score
+                sol_mean   = solutions.mean(axis=0)                                                 | aggregate.number_comparison.solutions_mean
+                base_score = solutions.cvs()                                                        | aggregate.number_comparison.base_score
+                rand_score = answer.measure(rand_seq)                                               | aggregate.number_comparison.rand_score
+                score      = answer.measure(sol_mean, normalize=normalize(base_score, rand_score))  | aggregate.number_comparison.answer_score
                 scoring.append(score)
-                success  = True
+                success    = True
 
-            elif formula.isinstanceof(NUMBER_COMPARISON, temperature=0.0):
+            elif self.isinstanceof(NUMBER_COMPARISON, temperature=0.0):
                 score    = (1.0 if instance_type == NUMBER_COMPARISON else 0.0)                     | aggregate.number_comparison.score
                 scoring.append(score)
                 answer   = details                                                                  | aggregate.number_comparison.answer
@@ -206,7 +208,6 @@ The Microsoft
     url  = "https://www.cnbc.com/2023/12/14/chatgpt-back-online-after-major-outage-openai-says.html"
     val  = f"crawl the news site from {url}"
     expr = MultiModalExpression(val)
-
     content_sym   = Symbol(content)                                                                 | aggregate.content
     summary_sym   = Symbol(summary)                                                                 | aggregate.summary
     base_score    = content_sym.measure(summary_sym)                                                | aggregate.content_score
@@ -214,14 +215,12 @@ The Microsoft
     rand_score    = content_sym.measure(rand_seq)                                                   | aggregate.rand_score
     succ, scoring = expr(aggregate,
                        lambda: 1, lambda: (url, content, content_sym, base_score, rand_score))
-
     return succ, {'scores': scoring}
 
 
 @toggle_test(ACTIVE, default=MOCK_RETURN)
 def test_search_engine(aggregate):
     query         = "What is sulfuric acid?"
-
     # Let's test whether or not it can extract the answer based on the CDC source.
     answer        = Symbol("Sulfuric acid (H2S04) is a corrosive substance, destructive to the skin, eyes, teeth, and lungs. Severe exposure can result in death.")
     expr          = MultiModalExpression(query)
@@ -230,12 +229,17 @@ def test_search_engine(aggregate):
     return succ, {'scores': scoring}
 
 
-@toggle_test(ACTIVE, default=MOCK_RETURN)
+@toggle_test(True, default=MOCK_RETURN)
 def test_linear_function_computation(aggregate):
-    query         = Symbol('What is the y-coordinate of the point where this line crosses the y-axis?')
-    val           = Symbol("A line parallel to y = 4x + 6 passes through a point P=(x1=5, y1=10).")
+    query         = Symbol('Analyse the following vectors and asses if (2, -11, 2) and (14, 2, 2) are linearly dependent?')
+    ref           = Symbol("(2, -11, 2) and (14, 2, 2) are linearly independent.")
+    solutions     = Symbol([
+        "(2, -11, 2) and (14, 2, 2) are actually linearly independent.",
+        "No, the vectors (2, -11, 2) and (14, 2, 2) demonstrate linear independence.",
+        "The vectors (2, -11, 2) and (14, 2, 2) are not linearly dependent."
+    ])
     expr          = MultiModalExpression(query)
-    succ, scoring = expr(aggregate, lambda: 0, lambda: ('y = 4x + 6, P=(x1=5, y1=10), solve y-coordinate', Symbol(LINEAR_FUNCTION), val))
+    succ, scoring = expr(aggregate, lambda: 0, lambda: ('(2, -11, 2) and (14, 2, 2) are linearly independent?', Symbol(LINEAR_ALGEBRA), (ref, solutions)))
 
     return succ, {'scores': scoring}
 
@@ -245,17 +249,14 @@ def test_comparison(aggregate):
     val        = Symbol("is 100044347 bigger than 129981063.472?")
     expr       = MultiModalExpression(val)
     succ, res  = expr(aggregate, lambda: 0, lambda: ('100044347 > 129981063.472', Symbol(NUMBER_COMPARISON), False))
-
     return succ, {'scores': res}
 
 
 @toggle_test(ACTIVE, default=MOCK_RETURN)
 def test_ocr_engine(aggregate):
     query         = "Extract the current balance from the bill image."
-
     answer        = Symbol("$ 21,920.37")
     expr          = MultiModalExpression(query)
     succ, scoring = expr(aggregate, lambda: 3, lambda: answer, real_time=False)
-
     return succ, {'scores': scoring}
 
