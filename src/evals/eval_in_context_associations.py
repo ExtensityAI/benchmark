@@ -129,25 +129,27 @@ class CustomLogicPrimitive(Primitive):
     def __or__(self, other: Any) -> Any:
         @core.logic(operator='or')
         def _func(_, a: str, b: str):
-            pass
+            pass # could impl. a fallback behavior here
         return self._to_symbol(_func(self, other))
 
     def __ror__(self, other: Any) -> Any:
         @core.logic(operator='or')
         def _func(_, a: str, b: str):
-            pass
+            pass # could impl. a fallback behavior here
+        other = self._to_symbol(other)
         return self._to_symbol(_func(other, self))
 
     def __and__(self, other: Any) -> Any:
         @core.logic(operator='and')
         def _func(_, a: str, b: str):
-            pass
+            pass # could impl. a fallback behavior here
         return self._to_symbol(_func(self, other))
 
     def __rand__(self, other: Any) -> Any:
         @core.logic(operator='and')
         def _func(_, a: str, b: str):
-            pass
+            pass # could impl. a fallback behavior here
+        other = self._to_symbol(other)
         return self._to_symbol(_func(other, self))
 
 

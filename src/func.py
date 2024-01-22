@@ -309,7 +309,7 @@ class EvaluateBenchmark(Expression):
             json.dump(type_results, f, indent=2)
         self.aggregator.save(f'results/{type}_aggregator.json')
 
-    def forward(self, experiments=['gpt4', 'llama', 'gpt3.5', 'zephyr', 'gemini', 'mistral', 'random'], n_runs=3, seeds=[42, 77, 97], dummy=False, tests=None):
+    def forward(self, experiments=["gpt4", "llama", "gpt3.5", "zephyr", "gemini", "mistral", "random"], n_runs=3, seeds=[42, 77, 97], dummy=False, tests=None):
         # This dictionary will now hold the scoring for each test type
         results = {}
         for experiment in experiments:
@@ -371,7 +371,7 @@ def run(args):
     )
 
     # Run benchmark
-    seeds  = [42, 18, 97, 3, 200, 32, 815, 6] if not args.seeds else args.seeds
+    seeds  = [42, 18, 97, 3, 200, 32, 815, 6] if not args.seeds or 'all' in args.seeds else args.seeds
     models = ['gpt4', 'llama', 'gpt3.5', 'zephyr', 'gemini', 'mistral', 'random'] if not args.models or 'all' in args.models else args.models
     tests  = None if not args.tests or 'all' in args.tests else args.tests
     benchmark_results = benchmarker(experiments=models,
