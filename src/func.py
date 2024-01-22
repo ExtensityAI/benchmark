@@ -372,7 +372,7 @@ def run(args):
 
     # Run benchmark
     seeds  = [42, 18, 97, 3, 200, 32, 815, 6] if not args.seeds or 'all' in args.seeds else args.seeds
-    models = ['gpt4', 'llama', 'gpt3.5', 'zephyr', 'gemini', 'mistral', 'random'] if not args.models or 'all' in args.models else args.models
+    models = ["gpt4", "llama", "gpt3.5", "zephyr", "gemini", "mistral", "random"] if not args.models or 'all' in args.models else args.models
     tests  = None if not args.tests or 'all' in args.tests else args.tests
     benchmark_results = benchmarker(experiments=models,
                                     n_runs=1,
