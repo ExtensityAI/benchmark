@@ -17,8 +17,8 @@ import json
 from collections import defaultdict, deque
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Dict, List, Optional
 from pathlib import Path
+from typing import Dict, List, Optional
 
 from symai import Function, Interface, Symbol
 from symai.backend.engines.index.engine_vectordb import VectorDBIndexEngine
@@ -29,7 +29,7 @@ from symai.utils import toggle_test
 
 from src.utils import MOCK_RETURN
 
-ACTIVE = False
+ACTIVE = True
 LOG = lambda msg, active=True: print(f"DEBUG:root:\n{msg}") if active else ""
 
 reader = FileReader()
@@ -88,7 +88,7 @@ The correct answer is: >>Subtask 2.1: Use the web browser to open the GitHub URL
 SOLUTION = {
     ">Task 1: Search for U-235": {
         "expected_interface": Interface("serpapi").__class__.__name__,
-        "expected_result": GOOGLE_RESULTS,
+        "expected_result": Symbol(GOOGLE_RESULTS),
         "expected_next_task": ">>Subtask 1.1: Extract the Wikipedia URL"
     },
     ">>Subtask 1.1: Extract the Wikipedia URL": {
@@ -98,7 +98,7 @@ SOLUTION = {
     },
     ">Task 2: Access the Wikipedia URL" : {
         "expected_interface": Interface("selenium").__class__.__name__,
-        "expected_result": WIKI_PAGE,
+        "expected_result": Symbol(WIKI_PAGE),
         "expected_next_task": ">>Subtask 2.1: Extract the half-life of U-235 from the page"
     },
     ">>Subtask 2.1: Extract the half-life of U-235 from the page": {
@@ -144,8 +144,8 @@ class ToolKit:
         f = Function(f"Reflect and narrate in first person which of the following capabilities would be best for the task at hand: {self.capabilities.keys()}")
         # We summarize the reflection to increase the chance of the LLM picking the correct interface.
         reflection = f(query).summarize()
-        tool       = reflection.similarity(Symbol.symbols(*self.capabilities.keys())).argmax()
-        interface  =  self.capabilities[list(self.capabilities.keys())[tool]]
+        tool = reflection.similarity(Symbol.symbols(*self.capabilities.keys())).argmax()
+        interface = self.capabilities[list(self.capabilities.keys())[tool]]
         return interface if interface.__class__.__name__ != "NoneType" else None
 
     def apply_tool(self, tool: Interface, query: Symbol, payload: Symbol = None) -> Symbol:
@@ -213,6 +213,12 @@ class Memory(SlidingWindowStringConcatMemory):
         EngineRepository.register('index', VectorDBIndexEngine(index_name='dataindex', index_dims=768, index_top_k=5))
 
 
+class Evaluate:
+    def __init__(self):
+        #@TODO: Make my boi's life easier…
+        pass
+
+
 class SequentialScheduler:
     def __init__(self, setup: Setup):
         self.goal           = setup.goal
@@ -222,16 +228,16 @@ class SequentialScheduler:
         self.toolkit        = ToolKit(setup.capabilities)
         self.task_extractor = TaskExtractor(setup.examples, choices=self._plan_as_list())
         self.setup          = setup
-        self.results        = defaultdict(dict)
+        self.results        = defaultdict(lambda: defaultdict(list))
 
         # We store in one variable the results of the last task to propagate to the next task.
-        self._value = None
+        self._payload = None
+        self._pool    = deque(self._plan_as_list())
 
     def unfold(self):
         while self.plan:
             # We start with the first task in the plan.
             task = self.plan.popleft()
-
             # We get the task name.
             task_name = list(task.keys())[0]
             # We get the subtasks if any.
@@ -249,29 +255,54 @@ class SequentialScheduler:
         return self.results
 
     def _execute(self, task_name: str, subtasks: Optional[List] = None):
-        tool = self.toolkit.pick_tool(task_name)
+        # We get the tool to execute the task.
+        try:
+            tool = self.toolkit.pick_tool(task_name)
+            self.results[task_name]["predicted_interface"] = tool.__class__.__name__ #@NOTE: Here we score whether the LLM picked the correct interface.
+            self.results[task_name]["execution"].append(1)
+        except Exception as e:
+            tool = self.solution[task_name]["expected_interface"]
+            tool = None if tool == "NoneType" else tool
+            self.results[task_name]["predicted_interface"] = str(e) #@NOTE: Bad luck is still no luck at all.
+            self.results[task_name]["execution"].append(0)
+
         query = Symbol(task_name.split(":")[1].strip())
 
-        # We get the next task to execute.
-        next_task = self.task_extractor.pick_next_task(self._prepare_data())
-        LOG(self._build_tag("NEXT TASK", next_task))
-        self.results[task_name]["predicted_next_task"] = next_task #@NOTE: Here we score whether the LLM picked the correct next task.
-        self.results[task_name]["predicted_interface"] = tool.__class__.__name__ #@NOTE: Here we score whether the LLM picked the correct interface.
-
         #@NOTE: Here we score whether the LLM picked the correct result and use the ideal result to continue the execution.
+        #       Moreover, we don't score tools. They must work, otherwise why are they tools?
         if tool is None:
-            # We use the LLM to execute the query.
             LOG(f"LLM is used to execute the query <{query}>.")
-            result = self._value.query(query)
-            self.results[task_name]["predicted_result"] = str(result.value)
-            self._value = self.solution[task_name]["expected_result"]
-            self._update_progress(self._value, task_name)
+            try:
+                result = self._payload.query(query, temperature=0.0)
+                self.results[task_name]["predicted_result"] = str(result.value) #@NOTE: Here we score whether the LLM picked the correct interface.
+                self.results[task_name]["execution"].append(1)
+            except Exception as e:
+                result = self.solution[task_name]["expected_result"]
+                self.results[task_name]["predicted_result"] = str(e) #@NOTE: Bad luck is still no luck at all.
+                self.results[task_name]["execution"].append(0)
+
+            self._payload = self.solution[task_name]["expected_result"]
+            self._update_memory_buffer(self._payload, task_name)
         else:
             LOG(f"{tool.__class__.__name__} is used to execute the query <{query}>.")
-            result = self.toolkit.apply_tool(tool, query, payload=self._value)
-            self.results[task_name]["predicted_result"] = str(result.value)
-            self._value = self.solution[task_name]["expected_result"]
-            self._update_progress(self._value, task_name)
+            # result = self.toolkit.apply_tool(tool, query, payload=self._payload) #@NOTE: We don't need to execute this because we already have the expected result. Kept for consistency.
+            self._payload = self.solution[task_name]["expected_result"]
+            self._update_memory_buffer(self._payload, task_name)
+
+        # We remove the task from the pool.
+        self._pool.remove(task_name)
+
+        # We get the next task to execute.
+        try:
+            next_task = self.task_extractor.pick_next_task(self._prepare_data())
+            self.results[task_name]["predicted_next_task"] = next_task #@NOTE: Here we score whether the LLM picked the correct next task.
+            self.results[task_name]["execution"].append(1)
+        except Exception as e:
+            next_task = self.solution[task_name]["expected_next_task"]
+            self.results[task_name]["predicted_next_task"] = str(e) #@NOTE: Bad luck is still no luck at all.
+            self.results[task_name]["execution"].append(0)
+
+        LOG(self._build_tag("NEXT TASK", next_task))
 
         if subtasks is not None:
             # We execute the subtasks.
@@ -282,7 +313,7 @@ class SequentialScheduler:
         if self.memory.long_term_mem is not None:
             self.memory.store(task_name, where="long_term_mem")
 
-    def _update_progress(self, result: str, task_name: str):
+    def _update_memory_buffer(self, result: str, task_name: str):
         # We store the result in the short-term memory.
         result = self._build_tag(f"EXECUTED SUCCESSFULLY", task_name)
         self.memory.store(result, where="short_term_mem")
@@ -291,6 +322,7 @@ class SequentialScheduler:
     def _prepare_data(self):
         # We get the history.
         history = "".join(self.memory.history())
+        pool    = "\n".join(self._pool)
         template = f"""
 This is your goal.
 {self.goal}
@@ -299,11 +331,12 @@ History of tasks that have been executed.
 {history}
 
 This is the pool of tasks that are left to be executed.
-{self._plan_as_str()}
+{pool if pool else "The pool is empty, there are no tasks left."}
 
 Answer to the query: What is the next task to execute?
 The correct answer is:
 """
+        LOG(self._build_tag("TEMPLATE", template))
         return template
 
     def _build_tag(self, tag: str, query: str) -> str:
