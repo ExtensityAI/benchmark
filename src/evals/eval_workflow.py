@@ -17,17 +17,17 @@ import json
 from collections import defaultdict, deque
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional
 from pathlib import Path
 
-from symai import Expression, Function, Interface, Symbol
+from symai import Function, Interface, Symbol
 from symai.backend.engines.index.engine_vectordb import VectorDBIndexEngine
 from symai.components import FileReader
 from symai.functional import EngineRepository
 from symai.memory import SlidingWindowStringConcatMemory
 from symai.utils import toggle_test
 
-from src.utils import MOCK_RETURN, RANDOM_SEQUENCE
+from src.utils import MOCK_RETURN
 
 ACTIVE = False
 LOG = lambda msg, active=True: print(f"DEBUG:root:\n{msg}") if active else ""

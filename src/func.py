@@ -15,6 +15,7 @@ from symai.backend.engines.neurosymbolic.engine_openai_gptX_chat import GPTXChat
 from symai.backend.engines.index.engine_vectordb import VectorDBIndexEngine
 from symai.collect.stats import Aggregator
 
+from src.engines.engine_mockup import MockupEngine
 from src.engines.engine_llamacpp import LLaMACppClientEngine
 from src.engines.engine_google_vertex import GoogleGeminiEngine
 from src.utils import measure, embedding_mean, cross_validation_score
@@ -40,7 +41,8 @@ MODEL_NAME_MAPPING = {
     'gemini': 'Gemini-Pro',
     'llama': 'LlaMA 2 13B',
     'mistral': 'Mistral 7B',
-    'zephyr': 'Zephyr 7B'
+    'zephyr': 'Zephyr 7B',
+    'random': 'Random'
 }
 
 
@@ -86,6 +88,13 @@ DUMMY_DATA = {
         f"{BENCHMARK_NAME_MAPPING['eval_program_synthesis']}": {"performance": 0.5},
         f"{BENCHMARK_NAME_MAPPING['eval_logic_components']}": {"performance": 0.43},
         f"{BENCHMARK_NAME_MAPPING['eval_computation_graphs']}": {"performance": 0.36}
+    },
+    f"{MODEL_NAME_MAPPING['random']}": {
+        f"{BENCHMARK_NAME_MAPPING['eval_in_context_associations']}": {"performance": 0.1},
+        f"{BENCHMARK_NAME_MAPPING['eval_multimodal_bindings']}": {"performance": 0.2},
+        f"{BENCHMARK_NAME_MAPPING['eval_program_synthesis']}": {"performance": 0.1},
+        f"{BENCHMARK_NAME_MAPPING['eval_logic_components']}": {"performance": 0.2},
+        f"{BENCHMARK_NAME_MAPPING['eval_computation_graphs']}": {"performance": 0.1}
     }
 }
 
@@ -168,6 +177,10 @@ class EvaluateBenchmark(Expression):
             # initialize the engine
             engine = LLaMACppClientEngine(host=config[experiment]['host'],
                                           port=config[experiment]['port'])
+            EngineRepository.register('neurosymbolic', engine, allow_engine_override=True)
+        elif experiment == 'random':
+            # initialize the engine
+            engine = MockupEngine()
             EngineRepository.register('neurosymbolic', engine, allow_engine_override=True)
 
         assert engine is not None, f'Engine {experiment} not found!'
@@ -290,7 +303,7 @@ class EvaluateBenchmark(Expression):
             json.dump(type_results, f, indent=2)
         self.aggregator.save(f'results/{type}_aggregator.json')
 
-    def forward(self, experiments=['gpt4', 'llama', 'gpt3.5', 'zephyr', 'gemini', 'mistral'], n_runs=3, seeds=[42, 77, 97], dummy=False):
+    def forward(self, experiments=['gpt4', 'llama', 'gpt3.5', 'zephyr', 'gemini', 'mistral', 'random'], n_runs=3, seeds=[42, 77, 97], dummy=False):
         # This dictionary will now hold the scoring for each test type
         results = {}
         for experiment in experiments:
@@ -352,7 +365,7 @@ def run(args):
 
     # Run benchmark
     seeds  = [42, 18, 97, 3, 200, 32, 815, 6] if not args.seeds else args.seeds
-    models = ['gpt4', 'llama', 'gpt3.5', 'zephyr', 'gemini', 'mistral'] if not args.models else args.models
+    models = ['gpt4', 'llama', 'gpt3.5', 'zephyr', 'gemini', 'mistral', 'random'] if not args.models else args.models
     benchmark_results = benchmarker(experiments=models,
                                     n_runs=1,
                                     seeds=seeds,

@@ -1,5 +1,7 @@
 from pathlib import Path
-from src.utils import normalize, RANDOM_SEQUENCE, REVERSED_RANDOM_SEQUENCE, MOCK_RETURN, success_score
+
+from src.utils import normalize, RANDOMNESS, MOCK_RETURN
+
 from symai import core_ext, Symbol, Expression, Interface, Function
 from symai.utils import toggle_test
 
@@ -86,7 +88,7 @@ class MultiModalExpression(Expression):
                 # prepare for wolframalpha
                 res        = self.solver(formula)
                 res        = res.query('write a one sentence summary of the answer')                | aggregate.number_comparison.res
-                rand_seq   = Symbol([RANDOM_SEQUENCE, REVERSED_RANDOM_SEQUENCE]).mean(axis=0)       | aggregate.number_comparison.rand_score
+                rand_seq   = Symbol(RANDOMNESS).mean(axis=0)                                        | aggregate.number_comparison.rand_score
                 sol_mean   = solutions.mean(axis=0)                                                 | aggregate.number_comparison.solutions_mean
                 base_score = solutions.cvs()                                                        | aggregate.number_comparison.base_score
                 rand_score = answer.measure(rand_seq)                                               | aggregate.number_comparison.rand_score
@@ -211,7 +213,7 @@ The Microsoft
     content_sym   = Symbol(content)                                                                 | aggregate.content
     summary_sym   = Symbol(summary)                                                                 | aggregate.summary
     base_score    = content_sym.measure(summary_sym)                                                | aggregate.content_score
-    rand_seq      = Symbol([RANDOM_SEQUENCE, REVERSED_RANDOM_SEQUENCE]).mean(axis=0)                | aggregate.rand_seq
+    rand_seq      = Symbol(RANDOMNESS).mean(axis=0)                                                 | aggregate.rand_seq
     rand_score    = content_sym.measure(rand_seq)                                                   | aggregate.rand_score
     succ, scoring = expr(aggregate,
                        lambda: 1, lambda: (url, content, content_sym, base_score, rand_score))

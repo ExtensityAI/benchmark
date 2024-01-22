@@ -20,6 +20,14 @@ def bool_success(res):
     return {'scores': [1.0 if res else 0.0]}
 
 
+def _is_numpy_array(val):
+    return isinstance(val, np.float64) or \
+           isinstance(val, np.float32) or \
+           isinstance(val, np.float16) or \
+           isinstance(val, np.float_)  or \
+           isinstance(val, np.ndarray)
+
+
 def normalize_score(base_score, rand_score, eps=1e-8):
     def _func(score):
         nonlocal base_score, rand_score
@@ -32,7 +40,7 @@ def normalize_score(base_score, rand_score, eps=1e-8):
         score   = score * z - z_rand
         # Do not allow negative scores
         res     = np.clip(score, 0.0, 1.0)
-        if isinstance(res, np.ndarray):
+        if _is_numpy_array(res):
             res = res.item()
         return res
     return _func
@@ -44,6 +52,10 @@ normalize = normalize_score
 RANDOM_SEQUENCE = string.printable
 # reversed random sequence
 REVERSED_RANDOM_SEQUENCE = RANDOM_SEQUENCE[::-1]
+# some random response
+RANDOM_RESPONSE = "As a worthless Mockup model, I cannot provide you with any meaningful response. I am sorry. Please try again later."
+# the list of all randomness
+RANDOMNESS = [RANDOM_SEQUENCE, REVERSED_RANDOM_SEQUENCE, RANDOM_RESPONSE]
 
 
 # general metric for similarity measure
@@ -59,10 +71,10 @@ def similarity_measure(self, other, normalize=None):
         # account for the fact that cosine similarity is bounded between -1 and 1
         # by normalizing the score to be between 0 and 1
         res = np.clip(val, 0.0, 1.0)
-        if isinstance(res, np.float64):
+        if _is_numpy_array(res):
             res = res.item()
         return res
-    if isinstance(res, np.float64):
+    if _is_numpy_array(res):
         res = res.item()
     return val
 
@@ -70,7 +82,7 @@ def similarity_measure(self, other, normalize=None):
 def distance_measure(self, other, normalize=None):
     # Measure the similarity between two symbols
     res = self.distance(other, kernel=KERNEL, normalize=normalize)
-    if isinstance(res, np.float64):
+    if _is_numpy_array(res):
         res = res.item()
     return res
 
@@ -80,7 +92,7 @@ def frechet_measure(self, other, normalize=None):
     sigma1 = np.cov(self.embedding, rowvar=False)
     sigma2 = np.cov(other.embedding, rowvar=False)
     res    = self.distance(other, kernel='frechet', normalize=normalize, sigma1=sigma1, sigma2=sigma2)
-    if isinstance(res, np.float64):
+    if _is_numpy_array(res):
         res = res.item()
     return res
 
@@ -134,7 +146,7 @@ def tree_to_str(node):
     return f"{node.type}({children_str})"
 
 
-def rand_ast_measure(tree, random_sequence=RANDOM_SEQUENCE):
+def rand_ast_measure(tree, random_sequence=RANDOMNESS):
     if (isinstance(tree, str) or isinstance(tree, Path)) and os.path.exists(tree):
         tree, _ = parse_file_to_ast(tree)
     elif isinstance(tree, str):
@@ -144,11 +156,15 @@ def rand_ast_measure(tree, random_sequence=RANDOM_SEQUENCE):
     # Convert parse trees to string representations
     str_     = tree_to_str(tree)
     # Generate a random parse tree
-    random_tree  = parso.parse(random_sequence)
-    randstr      = tree_to_str(random_tree)
-    # Random string similarity
-    matcher         = difflib.SequenceMatcher(None, str_, randstr)
-    rand_similarity = matcher.ratio()
+    sim = []
+    for rand_seq in random_sequence:
+        random_tree  = parso.parse(rand_seq)
+        randstr      = tree_to_str(random_tree)
+        # Random string similarity
+        matcher         = difflib.SequenceMatcher(None, str_, randstr)
+        rand_similarity = matcher.ratio()
+        sim.append(rand_similarity)
+    rand_similarity = np.mean(sim).item()
     return rand_similarity
 
 

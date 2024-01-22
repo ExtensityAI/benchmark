@@ -8,7 +8,7 @@ from symai.post_processors import CodeExtractPostProcessor, StripPostProcessor
 from symai.utils import toggle_test
 
 from src.evals.components import Factorization
-from src.utils import MOCK_RETURN, RANDOM_SEQUENCE, REVERSED_RANDOM_SEQUENCE, normalize
+from src.utils import MOCK_RETURN, RANDOMNESS, normalize
 
 from z3 import Solver, sat
 
@@ -80,7 +80,7 @@ def test_factorize_formula(aggregate):
     a, b, c, d, x, y = sym.symbols('a, b, c, d, x, y')
     expr        = a * x + b * x - c * x - a * y - b * y + c * y + d
     stmt        = Symbol("Can you simplify me the following expression: a*x + b*x - c*x - a*y - b*y + c*y + d")
-    random_seq  = Symbol([RANDOM_SEQUENCE, REVERSED_RANDOM_SEQUENCE]).mean(axis=0)                                         | aggregate.random_seq
+    random_seq  = Symbol(RANDOMNESS).mean(axis=0)                                                                          | aggregate.random_seq
     #res goes to sympy
     symbols_    = stmt.extract('all unique symbols as a list')
     refs        = Symbol(['a, b, c, d, x, y',
@@ -125,7 +125,7 @@ def test_dsl_writing_capability(aggregate):
     res          = expr(val)                                                                                               | aggregate.generated
     form1        = Symbol(formulation1)                                                                                    | aggregate.solution1
     # remove the chance of simply rephrasing the question
-    random       = Symbol([RANDOM_SEQUENCE, REVERSED_RANDOM_SEQUENCE]).mean(axis=0)                                        | aggregate.random_seq
+    random       = Symbol(RANDOMNESS).mean(axis=0)                                                                         | aggregate.random_seq
     rand_score   = random.measure(form_means)                                                                              | aggregate.rand_score
     base_score   = formulations.cvs()                                                                                      | aggregate.base_score
     score        = form1.measure(res, normalize=normalize(base_score, rand_score))                                         | aggregate.dsl_score
@@ -220,7 +220,7 @@ def test_solve_puzzle(aggregate):
         scoring.append(score)
 
     # How good?
-    random     = Symbol([RANDOM_SEQUENCE, REVERSED_RANDOM_SEQUENCE]).mean(axis=0)                                         | aggregate.random_seq
+    random     = Symbol(RANDOMNESS).mean(axis=0)                                                                          | aggregate.random_seq
     rand_score = ref_solution.measure(random)                                                                             | aggregate.rand_score
     solutions  = Symbol(trajectories.split("\n\n\n")).mean()                                                              | aggregate.solutions
     base_score = ref_solution.measure(solutions)                                                                          | aggregate.base_score

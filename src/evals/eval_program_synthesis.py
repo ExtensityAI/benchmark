@@ -1,6 +1,6 @@
 import os
 
-from src.utils import normalize, rand_ast_measure, ast_measure, RANDOM_SEQUENCE, REVERSED_RANDOM_SEQUENCE, MOCK_RETURN
+from src.utils import normalize, rand_ast_measure, ast_measure, RANDOMNESS, MOCK_RETURN
 
 from symai import Symbol, Expression, Conversation, Call
 from symai.components import FileReader, Execute, RuntimeExpression, ExpressionBuilder
@@ -28,7 +28,7 @@ The `create_latex_result` function must be self-contained, fully functional and 
 No other functions or explanations are required.
 """
     # Define random sequence to normalize data
-    random_seq = Symbol([RANDOM_SEQUENCE, REVERSED_RANDOM_SEQUENCE]).mean(axis=0)                                       | aggregate.random_seq
+    random_seq = Symbol(RANDOMNESS).mean(axis=0)                                                                        | aggregate.random_seq
     # Create a template
     template   = os.path.join(cur_file_dir, 'snippets/latex_templating_problem.txt')
     conv       = Conversation(file_link=[template], auto_print=False)
@@ -50,7 +50,7 @@ No other functions or explanations are required.
     solution1  = Symbol(solution1, callables=[Call('measure', ast_measure)])
     # compute again normalization score but this time for AST measure
     base_score = solution1.measure(solution2)                                                                           | aggregate.ast_base_score
-    rand_score = (0.5*(rand_ast_measure(solution1, random_seq) + rand_ast_measure(solution2, random_seq)))              | aggregate.ast_rand_score
+    rand_score = (0.5*(rand_ast_measure(solution1) + rand_ast_measure(solution2)))                                      | aggregate.ast_rand_score
     score      = solution1.measure(code, normalize=normalize(base_score, rand_score))                                   | aggregate.ast_score
     scoring.append(score)
 
@@ -68,7 +68,8 @@ No other functions or explanations are required.
         scoring.append(score)
         success = True
     except Exception as e:
-        scoring.append(0.0)                                                                                             | aggregate.code_score
+        score  = 0.0                                                                                                    | aggregate.code_score
+        scoring.append(score)
 
     return success, {'scores': scoring}
 
@@ -113,7 +114,7 @@ class APIExecutor(Expression):
 @toggle_test(ACTIVE, default=MOCK_RETURN)
 def test_api_builder(aggregate):
     answer    = Symbol("Yannic Kilcher")                                                                                | aggregate.answer
-    rand_seq  = Symbol([RANDOM_SEQUENCE, REVERSED_RANDOM_SEQUENCE]).mean(axis=0)                                        | aggregate.random_seq
+    rand_seq  = Symbol(RANDOMNESS).mean(axis=0)                                                                         | aggregate.random_seq
     reader    = FileReader()
     website   = reader(os.path.join(cur_file_dir, 'snippets/code_api_builder_website_result.txt'))
     ref_code  = reader(os.path.join(cur_file_dir, 'snippets/code_api_builder.txt'))                                     | aggregate.ref_code
@@ -157,25 +158,30 @@ class QueryExpression(Expression):
 _value_obj_ = QueryExpression
 """)                                                                                                                    | aggregate.solution2
     solutions = Symbol([solution1, solution2]).mean(axis=0)                                                             | aggregate.solutions
-    rand_seq  = Symbol([RANDOM_SEQUENCE, REVERSED_RANDOM_SEQUENCE]).mean(axis=0)                                        | aggregate.random_seq
+    rand_seq  = Symbol(RANDOMNESS).mean(axis=0)                                                                         | aggregate.random_seq
     builder   = ExpressionBuilder()
     code      = builder("Create a query Expression that is initializes a Function with a prompt and processes a data Symbol based on the custom Function.")
     runner    = RuntimeExpression()
     scoring   = []
     try:
-        expr    = runner(code)
-        scoring.append(1.0)                                                                                             | aggregate.code_score
+        expr  = runner(code)
+        score = 1.0                                                                                                     | aggregate.code_score
+        scoring.append(score)
+        # initialize the expression with the prompt
+        query = expr('extract the names from the text')
     except:
-        scoring.append(0.0)                                                                                             | aggregate.code_score
-    query     = expr('extract the names from the text')
+        score = 0.0                                                                                                     | aggregate.code_score
+        scoring.append(score)
     base_sim  = solution1.measure(solution2)                                                                            | aggregate.base_sim
     rand_sim  = solutions.measure(rand_seq)                                                                             | aggregate.rand_sim
     sim       = solution1.measure(code, normalize=normalize(base_sim, rand_sim))                                        | aggregate.code_sim
     scoring.append(sim)
     try:
+        # run the expression on the data
         res   = query('Hello my name is Max and I am 20 years old.')                                                    | aggregate.query_res
         sim   = res.measure('Max')                                                                                      | aggregate.query_sim
         scoring.append(sim)
     except:
-        scoring.append(0.0)                                                                                             | aggregate.query_sim
+        score = 0.0                                                                                                     | aggregate.query_sim
+        scoring.append(score)
     return True, {'scores': scoring}

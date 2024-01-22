@@ -1,11 +1,10 @@
 import os
-import numpy as np
 
 from pathlib import Path
 from datetime import datetime
 from ast import List
 
-from src.utils import MOCK_RETURN, RANDOM_SEQUENCE, REVERSED_RANDOM_SEQUENCE
+from src.utils import MOCK_RETURN, RANDOMNESS
 from src.evals.components.paper import Paper, RelatedWork, Cite, Abstract, Title, Method, Source
 
 from symai import Symbol, Expression, Function, Interface
@@ -425,13 +424,15 @@ def test_sub_routine_os_commands(aggregate):
 def test_sub_routine_create_paper(aggregate):
     # define the task
     reader     = FileReader()
-    rand_seq   = Symbol([RANDOM_SEQUENCE, REVERSED_RANDOM_SEQUENCE]).mean(axis=0)                              | aggregate.rand_seq
+    rand_seq   = Symbol(RANDOMNESS).mean(axis=0)                                                               | aggregate.rand_seq
     dir_path   = Path(__file__).parent.absolute() / "snippets"
-    references = list(map(reader, [(dir_path / "paper/ref/reference_section_framework.txt").as_posix()         | aggregate.ref_method,
-                                   (dir_path / "paper/ref/reference_section_relatedwork.txt").as_posix()       | aggregate.ref_related_work,
-                                   (dir_path / "paper/ref/reference_abstract.txt").as_posix()                  | aggregate.ref_abstract,
-                                   (dir_path / "paper/ref/reference_title.txt").as_posix()                     | aggregate.ref_title,
-                                   (dir_path / "paper/ref/reference_paper.txt").as_posix()])                   | aggregate.ref_paper)
+    references = list(map(reader, [
+        (dir_path / "paper/ref/reference_section_framework.txt").as_posix()                                    | aggregate.ref_method,
+        (dir_path / "paper/ref/reference_section_relatedwork.txt").as_posix()                                  | aggregate.ref_related_work,
+        (dir_path / "paper/ref/reference_abstract.txt").as_posix()                                             | aggregate.ref_abstract,
+        (dir_path / "paper/ref/reference_title.txt").as_posix()                                                | aggregate.ref_title,
+        (dir_path / "paper/ref/reference_paper.txt").as_posix()                                                | aggregate.ref_paper
+    ]))
     scoring    = []
     task       = Symbol("[Objective]\nWrite a paper about the SymbolicAI framework. Include citations and references from the referenced papers. Follow primarily the [Task] instructions.")
     # choose the correct function context
@@ -480,10 +481,18 @@ def test_sub_routine_create_paper(aggregate):
     sim          = references[4].measure(paper)                                                                | aggregate.sim_paper
     scoring.append(sim)
 
-    # visualize the computation graph
-    GraphViz()(expr, 'results/paper.html')
-    # visualize the computation graph
-    GraphViz()(results[-1], 'results/results.html')
+    try:
+        # visualize the computation graph
+        GraphViz()(expr, 'results/paper.html')
+        # visualize the computation graph
+        GraphViz()(results[-1], 'results/results.html')
+        # NICE! We made it this far, here you go, have some tasty points
+        score = 1.0                                                                                             | aggregate.score
+        scoring.append(score)
+    except:
+        # Uh boiiii, back to the drawing board
+        score = 0.0                                                                                             | aggregate.score
+        scoring.append(score)
 
     return True, {'scores': scoring}
 
