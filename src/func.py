@@ -250,7 +250,7 @@ class EvaluateBenchmark(Expression):
                                 res, info = test_func(aggregator, *args, **kwargs)
                             except Exception as e:
                                 print('EVAL FAILURE:', fun_name, e) # Ignore exceptions and count as a failure
-                                return False, 0.0, 0.0
+                                return False, 0.0, [0.0]
                             finally:
                                 sleep(0.05) # Sleep for 50ms for min. API cooldown
                             end_time = time()  # End timing
@@ -286,7 +286,7 @@ class EvaluateBenchmark(Expression):
                         # Update progress bar
                         progress.update(1)
                         # print progress
-                        mean_score = np.sum(results[experiment][type]['scores']) / experiment_cnt if experiment_cnt > 0 else 0.0
+                        mean_score = np.mean(results[experiment][type]['scores']) if experiment_cnt > 0 else 0.0
                         progress.set_postfix({f'{experiment}: mean score': mean_score, 'time': elapsed_time})
 
         # Calculate the average scoring for associations

@@ -1,5 +1,6 @@
-import argparse
 import os
+import json
+import argparse
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -20,6 +21,7 @@ def parse_args():
     parser.add_argument('--models',               help='Run the specified models.',                  default=['all'],       type=str, nargs='+')
     parser.add_argument('--seeds',                help='Run the specified seeds.',                   default=['all'],       type=int, nargs='+')
     parser.add_argument('--tests',                help='Run only specific tests.',                   default=['all'],       type=str, nargs='+')
+    parser.add_argument('--plot',                 help='Plot the results.',                                                 type=str)
     return parser.parse_args()
 
 
@@ -191,6 +193,10 @@ def create_plot(data):
 
 if __name__ == '__main__':
     args = parse_args()
-    results = run(args)
+    if args.plot is None:
+        results = run(args)
+    else:
+        with open(args.plot, 'r') as f:
+            results = json.load(f)
     create_latex_result(results)
     create_plot(results)

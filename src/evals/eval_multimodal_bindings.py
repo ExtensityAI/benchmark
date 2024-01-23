@@ -94,68 +94,68 @@ class MultiModalExpression(Expression):
         # mathematical formula
         if option == 0:
             ref_formula, instance_type, details  = presets()
-            ref_formula = Symbol(ref_formula)                                                       | aggregate.ref_formula
-            formula     = self.extract('mathematical formula')                                      | aggregate.formula
-            score       = ref_formula.measure(formula)                                              | aggregate.formula_score
+            ref_formula = Symbol(ref_formula)                                                                       | aggregate.ref_formula
+            formula     = self.extract('mathematical formula')                                                      | aggregate.formula
+            score       = ref_formula.measure(formula)                                                              | aggregate.formula_score
             scoring.append(score.value)
             # subtypes of mathematical formula
             if self.isinstanceof(LINEAR_ALGEBRA, temperature=0.0):
-                score    = (1.0 if str(instance_type) == LINEAR_ALGEBRA else 0.0)                   | aggregate.linear_function.score
+                score    = (1.0 if str(instance_type) == LINEAR_ALGEBRA else 0.0)                                   | aggregate.linear_function.score
                 scoring.append(score)
                 if score == 0.0: # avoid error when in wrong category
                     # no score for other types of mathematical formula
-                    score = 0.0                                                                     | aggregate.linear_function.answer_score
+                    score = 0.0                                                                                     | aggregate.linear_function.answer_score
                     scoring.append(score)
                     return success, scoring
                 answer, solutions = details
-                answer   = Symbol(answer)                                                           | aggregate.linear_function.answer
+                answer   = Symbol(answer)                                                                           | aggregate.linear_function.answer
                 # prepare for wolframalpha
                 res        = self.solver(formula)
-                res        = res.query('write a one sentence summary of the answer')                | aggregate.number_comparison.res
-                rand_seq   = Symbol(RANDOMNESS).mean(axis=0)                                        | aggregate.number_comparison.rand_score
-                sol_mean   = solutions.mean(axis=0)                                                 | aggregate.number_comparison.solutions_mean
-                base_score = solutions.cvs()                                                        | aggregate.number_comparison.base_score
-                rand_score = answer.measure(rand_seq)                                               | aggregate.number_comparison.rand_score
-                score      = answer.measure(sol_mean, normalize=normalize(base_score, rand_score))  | aggregate.number_comparison.answer_score
+                res        = res.query('write a one sentence summary of the answer')                                | aggregate.number_comparison.res
+                rand_seq   = Symbol(RANDOMNESS).mean(axis=0)                                                        | aggregate.number_comparison.rand_mean
+                sol_mean   = solutions.mean(axis=0)                                                                 | aggregate.number_comparison.solutions_mean
+                base_score = solutions.cvs()                                                                        | aggregate.number_comparison.base_score
+                rand_score = answer.measure(rand_seq)                                                               | aggregate.number_comparison.rand_score
+                score      = answer.measure(sol_mean, normalize=normalize(base_score, rand_score))                  | aggregate.number_comparison.answer_score
                 scoring.append(score.value)
                 success    = True
 
             elif self.isinstanceof(NUMBER_COMPARISON, temperature=0.0):
-                score    = (1.0 if str(instance_type) == NUMBER_COMPARISON else 0.0)                | aggregate.number_comparison.score
+                score    = (1.0 if str(instance_type) == NUMBER_COMPARISON else 0.0)                                | aggregate.number_comparison.score
                 scoring.append(score)
                 if score == 0.0: # avoid error when in wrong category
                     # no score for other types of mathematical formula
-                    score = 0.0                                                                     | aggregate.number_comparison.answer_score
+                    score = 0.0                                                                                     | aggregate.number_comparison.answer_score
                     scoring.append(score)
                     return success, scoring
-                answer   = details                                                                  | aggregate.number_comparison.answer
+                answer   = details                                                                                  | aggregate.number_comparison.answer
                 res      = self.solver(formula) # send directly to wolframalpha
-                score    = (1.0 if res == answer else 0.0)                                          | aggregate.number_comparison.answer_score
+                score    = (1.0 if res == answer else 0.0)                                                          | aggregate.number_comparison.answer_score
                 scoring.append(score)
                 success  = True
 
             else:
                 # no score for other types of mathematical formula
-                score    = 0.0                                                                      | aggregate.unknown.score
+                score    = 0.0                                                                                      | aggregate.unknown.score
                 scoring.append(score)
                 success  = False
 
         # website content scraping and crawling
         elif option == 1:
             ori_url, page, content_sym, base_score, rand_score = presets()
-            ori_url_sym = Symbol(ori_url)                                                           | aggregate.website_scraping.ori_url
-            url         = self.extract('url')                                                       | aggregate.website_scraping.gen_url
-            score       = ori_url_sym.measure(url)                                                  | aggregate.website_scraping.score
+            ori_url_sym = Symbol(ori_url)                                                                           | aggregate.website_scraping.ori_url
+            url         = self.extract('url')                                                                       | aggregate.website_scraping.gen_url
+            score       = ori_url_sym.measure(url)                                                                  | aggregate.website_scraping.score
             scoring.append(score.value)
-            res         = self.func(page)                                                           | aggregate.website_scraping.res
+            res         = self.func(page)                                                                           | aggregate.website_scraping.res
             # normalize the score towards the original content
-            score       = content_sym.measure(res, normalize=normalize(base_score, rand_score))     | aggregate.website_scraping.score
+            score       = content_sym.measure(res, normalize=normalize(base_score, rand_score))                     | aggregate.website_scraping.score
             scoring.append(score.value)
             success     = True
 
         # search engine query
         elif option == 2:
-            answer = presets()                                                                      | aggregate.search_engine.answer
+            answer = presets()                                                                                      | aggregate.search_engine.answer
 
             if kwargs.get('real_time'):
                 res = self.search(self.value)
@@ -164,15 +164,15 @@ class MultiModalExpression(Expression):
                 snippet_path = Path(__file__).parent / "snippets" / "google_organic_results_20240111_query=What-is-sulfuric-acid.txt"
                 res = open(snippet_path, "r").read()
 
-            res     = Symbol(res)                                                                   | aggregate.search_engine.res
+            res     = Symbol(res)                                                                                   | aggregate.search_engine.res
             res     = res.extract("The answer based on the CDC source.")
-            score   = res.measure(answer)                                                           | aggregate.search_engine.score
+            score   = res.measure(answer)                                                                           | aggregate.search_engine.score
             scoring.append(score.value)
             success = True
 
         # optical character recognition
         elif option == 3:
-            answer  = presets()                                                                     | aggregate.ocr_engine.answer
+            answer  = presets()                                                                                     | aggregate.ocr_engine.answer
             if kwargs.get('real_time'):
                 res = self.ocr((Path(__file__).parent / "assets" / "sample_bill.jpg").as_posix())
             else:
@@ -180,11 +180,12 @@ class MultiModalExpression(Expression):
                 res = open(snippet_path, "r").read()
                 res = Symbol(res)
 
-            res     = res.extract(self.value)                                                       | aggregate.ocr_engine.res
-            score   = res.measure(answer)                                                           | aggregate.ocr_engine.score
+            res     = res.extract(self.value)                                                                       | aggregate.ocr_engine.res
+            score   = res.measure(answer)                                                                           | aggregate.ocr_engine.score
             scoring.append(score.value)
             success = True
 
+        # Other modalities we could evaluate and include in the score in the future, but exceeds the scope of this benchmark.
         # image rendering
         # elif option == 4:
         #     query = self.extract('image url')
@@ -201,7 +202,7 @@ class MultiModalExpression(Expression):
         #     res   = self.transcribe(audio)
 
         else:
-            score   = 0.0                                                                           | aggregate.unknown.score
+            score   = 0.0                                                                                           | aggregate.unknown.score
             scoring.append(score)
             success = False
 
@@ -239,11 +240,11 @@ The Microsoft
     url  = "https://www.cnbc.com/2023/12/14/chatgpt-back-online-after-major-outage-openai-says.html"
     val  = f"crawl the news site from {url}"
     expr = MultiModalExpression(val)
-    content_sym   = Symbol(content)                                                                 | aggregate.content
-    summary_sym   = Symbol(summary)                                                                 | aggregate.summary
-    base_score    = content_sym.measure(summary_sym)                                                | aggregate.content_score
-    rand_seq      = Symbol(RANDOMNESS).mean(axis=0)                                                 | aggregate.rand_seq
-    rand_score    = content_sym.measure(rand_seq)                                                   | aggregate.rand_score
+    content_sym   = Symbol(content)                                                                                 | aggregate.content
+    summary_sym   = Symbol(summary)                                                                                 | aggregate.summary
+    base_score    = content_sym.measure(summary_sym)                                                                | aggregate.content_score
+    rand_seq      = Symbol(RANDOMNESS).mean(axis=0)                                                                 | aggregate.rand_seq
+    rand_score    = content_sym.measure(rand_seq)                                                                   | aggregate.rand_score
     succ, scoring = expr(
         aggregate,
         lambda: 1,
