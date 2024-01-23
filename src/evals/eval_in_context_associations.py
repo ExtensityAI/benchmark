@@ -164,7 +164,7 @@ def test_AND_logic(aggregate):
                   Symbol('I hear the horn', primitives=CustomLogicPrimitive))                     | aggregate.res         # collect the result value
     rand_mean  = Symbol(RANDOMNESS).mean()                                                        | aggregate.rand_mean   # collect the mean random value
     rand_score = base_mean.measure(rand_mean)                                                     | aggregate.rand_score  # collect the random score
-    score      = res.measure(base_mean, normalize=normalize(base_score, rand_score))              | aggregate.score       # collect the score
+    score      = Symbol(res).measure(base_mean, normalize=normalize(base_score, rand_score))      | aggregate.score       # collect the score
     return True, {'scores': [score.value]}
 
 
@@ -181,7 +181,7 @@ def test_OR_logic(aggregate):
            Symbol(f'The {subject} has a tail.', primitives=CustomLogicPrimitive))                 | aggregate.res         # collect the result value
     rand_mean  = Symbol(RANDOMNESS).mean()                                                        | aggregate.rand_mean   # collect the mean random value
     rand_score = base_mean.measure(rand_mean)                                                     | aggregate.rand_score  # collect the random score
-    score      = res.measure(base_mean, normalize=normalize(base_score, rand_score))              | aggregate.score       # collect the score
+    score      = Symbol(res).measure(base_mean, normalize=normalize(base_score, rand_score))      | aggregate.score       # collect the score
     return True, {'scores': [score.value]}
 
 
