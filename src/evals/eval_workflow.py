@@ -27,10 +27,10 @@ from symai.functional import EngineRepository
 from symai.memory import SlidingWindowStringConcatMemory
 from symai.utils import toggle_test
 
-from src.utils import MOCK_RETURN
+from src.utils import MOCK_RETURN, RANDOMNESS, normalize
 
 ACTIVE = True
-LOG = lambda msg, active=True: print(f"DEBUG:root:\n{msg}") if active else ""
+LOG = lambda msg, active=not ACTIVE: print(f"DEBUG:root:\n{msg}") if active else ""
 
 reader = FileReader()
 dir_path = Path(__file__).parent.absolute() / "snippets"
@@ -38,13 +38,35 @@ GOOGLE_RESULTS = reader((dir_path / "google_organic_results_20240121_query=Searc
 WIKI_PAGE      = reader((dir_path / "wiki_page_20240121.txt").as_posix())
 
 GOAL = "Search for U-235, access the Wikipedia page, find out what is the half-life of U-235, and then take the binary logarithm of the half-life."
+
 CAPABILITIES = {
     "Google Search: to be used for searching facts or information." : Interface("serpapi"),
     "Browser: to be used for opening web pages." : Interface("selenium"),
     "Wolfram Alpha: to be used for getting precise answers to numerical calculations." : Interface("wolframalpha"),
     "Large Language Model (LLM): to be used for extracting information." : None
 }
-PLAN = deque([
+
+PLAN_GENERATION_TEMPLATE = """
+Given a goal, write a plan that you would follow to achieve it.
+
+Goal:
+Develop a machine learning model to predict stock prices using data from Yahoo Finance. The model should be able to forecast prices for the next five days based on historical data.
+
+Plan:
+>Task 1: Gather and preprocess historical stock data
+>>Subtask 1.1: Use Python to scrape historical stock data from Yahoo Finance
+>>Subtask 1.2: Clean and preprocess the data for model training (handling missing values, normalizing data, etc.)
+>>Subtask 1.3: Split the data into training and validation sets
+>Task 2: Develop the prediction model
+>>Subtask 2.1: Select and implement a suitable machine learning algorithm (e.g., LSTM, ARIMA)
+>>Subtask 2.2: Train the model on the preprocessed training set
+>Task 3: Validate the model
+>>Subtask 3.1: Evaluate the model's performance using metrics like RMSE and MAE
+>Task 4: Forecast future stock prices
+>>Subtask 4.1: Use the model to predict stock prices for the next five days
+"""
+
+EXPECTED_PLAN = deque([
     {">Task 1: Search for U-235" : [
         ">>Subtask 1.1: Extract the Wikipedia URL"
     ]},
@@ -56,12 +78,12 @@ PLAN = deque([
         ">>Subtask 3.1: Extract the number"
     ]}
 ])
-EXAMPLES = f"""
-This is your goal.
+
+TASK_EXTRACTION_TEMPLATE = f"""
+This is your goal:
 Write a paper about the SymbolicAI framework from GitHub https://github.com/ExtensityAI/symbolicai. Include citations and references from the papers directory `./snippets/papers`.
 
-
-History of tasks that have been executed.
+History of tasks that have been executed:
 [EXECUTED SUCCESSFULLY@21/01/2024 15:38:45:867949]:
 <<<
 >Task 1: Create the paper and framework index from the GitHub URL and papers directory
@@ -72,19 +94,20 @@ History of tasks that have been executed.
 >>>
 [EXECUTED SUCCESSFULLY@21/01/2024 15:38:55:194266]:
 <<<
->Task 2: Write a summary of the SymbolicAI framework
+>>Subtask 1.2: Use the shell to index the GitHub URL
 >>>
 
-
-This is the pool of tasks that are left to be executed.
+This is the pool of tasks that are left to be executed:
+>Task 2: Write a summary of the SymbolicAI framework
 >>Subtask 2.1: Use the web browser to open the GitHub URL https://github.com/ExtensityAI/symbolicai
 >>Subtask 2.2: Summarize the GitHub page
 >Task 3: Write the Related Work section
 
-
-Answer to the query: What is the next task to execute?
-The correct answer is: >>Subtask 2.1: Use the web browser to open the GitHub URL
+Answer to the query "What is the next task to execute?"
+Based on the pool of tasks, the correct answer is:
+>Task 2: Write a summary of the SymbolicAI framework
 """
+
 SOLUTION = {
     ">Task 1: Search for U-235": {
         "expected_interface": Interface("serpapi").__class__.__name__,
@@ -120,6 +143,28 @@ SOLUTION = {
         "expected_interface": "NoneType",
         "expected_result": Symbol("9.45902"),
         "expected_next_task": None
+    },
+    GOAL: {
+    "trajectories": [
+        """
+>Task 1: Use the search engine and lookup U-235
+>>Subtask 1.1: Retrieve the Wikipedia link from the results
+>Task 2: Access the Wikipedia link and extract the half-life of U-235
+>>Subtask 2.1: Retrieve the half-life from the wikipedia article
+>>Subtask 2.2: Retrieve the exact number from the result
+>Task 3: Take the binary logarithm of the half-life of U-235
+>>Subtask 3.1: Retrieve the exact number from the result
+""",
+        """
+>Task 1: Search for U-235
+>>Subtask 1.1: Extract the Wikipedia URL
+>Task 2: Open the Wikipedia URL
+>>Subtask 2.1: Extract the half-life
+>>Subtask 2.2: Extract the number
+>Task 3: Compute the binary logarithm
+>>Subtask 3.1: Extract the number
+"""
+        ]
     }
 }
 
@@ -127,9 +172,10 @@ SOLUTION = {
 @dataclass
 class Setup:
     goal: str
-    plan: deque
+    expected_plan: deque
     capabilities: Dict
-    examples: str
+    task_extraction_template: str
+    plan_generation_template: str
     solution: Dict
 
 
@@ -167,15 +213,33 @@ class ToolKit:
 
 
 class TaskExtractor:
-    def __init__(self, examples: str, choices: List):
-        self.examples = examples
+    def __init__(self, task_extraction_template: str, choices: List):
+        self.task_extraction_template = task_extraction_template
         self.choices  = choices
 
     def pick_next_task(self, data: str) -> Optional[str]:
-        f = Function(f"Reflect and narrate in first person which of the following tasks would be best to execute next: {data}", examples=self.examples)
+        f = Function(f"Reflect and narrate in first person which of the following tasks would be best to execute next: {data}", examples=self.task_extraction_template)
         reflection = f(data)
         task = reflection.similarity(Symbol.symbols(*self.choices)).argmax()
         return self.choices[task]
+
+
+class PlanGenerator:
+    def __init__(self, plan_generation_template: str):
+        self.plan_generation_template = plan_generation_template
+
+    def generate_plan(self, goal: str) -> str:
+        template = f"""
+        Given a goal, write a plan that you would follow to achieve it.
+
+        Goal:
+        {goal}
+
+        Plan:
+        """
+        f = Function(template, examples=self.plan_generation_template)
+        plan = f()
+        return plan
 
 
 class Memory(SlidingWindowStringConcatMemory):
@@ -213,31 +277,68 @@ class Memory(SlidingWindowStringConcatMemory):
         EngineRepository.register('index', VectorDBIndexEngine(index_name='dataindex', index_dims=768, index_top_k=5))
 
 
-class Evaluate:
-    def __init__(self):
-        #@TODO: Make my boi's life easier…
-        pass
+class Evaluator:
+    def __init__(self, goal: str, solution: Dict, results: Dict):
+        self.goal     = goal
+        self.solution = solution
+        self.results  = results
+
+        # Compute the score for each task.
+        self.scoring = defaultdict(list)
+
+    def collect(self):
+        for task in self.solution:
+            res = self.results[task]
+            sol = self.solution[task]
+            expected_result = Symbol(sol["expected_result"])
+            if task == self.goal:
+                # Only for the goal we have trajectories.
+                trajectories = Symbol(sol["trajectories"]).mean()
+                rand_score   = expected_result.measure(Symbol(RANDOMNESS).mean())
+                base_score   = expected_result.measure(trajectories)
+                plan_score   = expected_result.measure(res["predicted_result"], normalize=normalize(base_score, rand_score)).value
+                self.scoring[task].append(plan_score)
+                self.scoring[task] += res["execution"]
+            else:
+                expected_interface = Symbol(sol["expected_interface"])
+                expected_next_task = Symbol(sol["expected_next_task"])
+                if res.get("predicted_result") is not None:
+                    # We have a predicted result from the LLM.
+                    predicted_result_score = expected_result.measure(res["predicted_result"]).value
+                    self.scoring[task].append(predicted_result_score)
+
+                predicted_interface_score = expected_interface.measure(res["predicted_interface"]).value
+                predicted_next_task_score = expected_next_task.measure(res["predicted_next_task"]).value
+                self.scoring[task].append(predicted_interface_score)
+                self.scoring[task].append(predicted_next_task_score)
+                self.scoring[task] += res["execution"]
+
+        return self.scoring
 
 
 class SequentialScheduler:
     def __init__(self, setup: Setup):
         self.goal           = setup.goal
-        self.plan           = setup.plan
+        self.expected_plan  = setup.expected_plan
         self.solution       = setup.solution
         self.memory         = Memory()
         self.toolkit        = ToolKit(setup.capabilities)
-        self.task_extractor = TaskExtractor(setup.examples, choices=self._plan_as_list())
+        self.task_extractor = TaskExtractor(setup.task_extraction_template, choices=self._plan_as_list())
+        self.plan_generator = PlanGenerator(setup.plan_generation_template)
         self.setup          = setup
         self.results        = defaultdict(lambda: defaultdict(list))
+
+        # We generate a plan based on the goal to see how the LLM performs against the expected plan.
+        self.generate_plan()
 
         # We store in one variable the results of the last task to propagate to the next task.
         self._payload = None
         self._pool    = deque(self._plan_as_list())
 
     def unfold(self):
-        while self.plan:
+        while self.expected_plan:
             # We start with the first task in the plan.
-            task = self.plan.popleft()
+            task = self.expected_plan.popleft()
             # We get the task name.
             task_name = list(task.keys())[0]
             # We get the subtasks if any.
@@ -250,13 +351,24 @@ class SequentialScheduler:
             # We continue unfolding the plan…
             self.unfold()
 
-        self._dump_results()
-
         return self.results
+
+    def generate_plan(self):
+        try:
+            predicted_plan = self.plan_generator.generate_plan(self.goal)
+            self.results[self.goal]["predicted_result"] = predicted_plan.value
+            self.results[self.goal]["execution"].append(1)
+        except Exception as e:
+            self.results[self.goal]["predicted_result"] = str(e)
+            self.results[self.goal]["execution"].append(0)
+
+        # We store the expected plan.
+        self.solution[self.goal]["expected_result"] = self._plan_as_str()
 
     def _execute(self, task_name: str, subtasks: Optional[List] = None):
         # We get the tool to execute the task.
         try:
+            # assert False, "This is a test."
             tool = self.toolkit.pick_tool(task_name)
             self.results[task_name]["predicted_interface"] = tool.__class__.__name__ #@NOTE: Here we score whether the LLM picked the correct interface.
             self.results[task_name]["execution"].append(1)
@@ -273,6 +385,7 @@ class SequentialScheduler:
         if tool is None:
             LOG(f"LLM is used to execute the query <{query}>.")
             try:
+                # assert False, "This is a test."
                 result = self._payload.query(query, temperature=0.0)
                 self.results[task_name]["predicted_result"] = str(result.value) #@NOTE: Here we score whether the LLM picked the correct interface.
                 self.results[task_name]["execution"].append(1)
@@ -294,6 +407,7 @@ class SequentialScheduler:
 
         # We get the next task to execute.
         try:
+            # assert False, "This is a test."
             next_task = self.task_extractor.pick_next_task(self._prepare_data())
             self.results[task_name]["predicted_next_task"] = next_task #@NOTE: Here we score whether the LLM picked the correct next task.
             self.results[task_name]["execution"].append(1)
@@ -329,12 +443,11 @@ This is your goal.
 
 History of tasks that have been executed.
 {history}
-
 This is the pool of tasks that are left to be executed.
 {pool if pool else "The pool is empty, there are no tasks left."}
 
-Answer to the query: What is the next task to execute?
-The correct answer is:
+Answer to the query "What is the next task to execute?"
+Based on the pool of tasks, the correct answer is:
 """
         LOG(self._build_tag("TEMPLATE", template))
         return template
@@ -346,7 +459,7 @@ The correct answer is:
 
     def _plan_as_str(self):
         s = ""
-        for task in self.plan:
+        for task in self.expected_plan:
            for k in task:
                subtask = task.get(k)
                s += k
@@ -360,21 +473,25 @@ The correct answer is:
     def _plan_as_list(self):
         return list(filter(lambda x: x, self._plan_as_str().split("\n"))) # Filter empty strings
 
-    def _dump_results(self):
-        with open("/tmp/results.json", "w") as f:
-            json.dump(self.results, f, indent=4)
-
 
 @toggle_test(ACTIVE, default=MOCK_RETURN)
 def test_workflow(aggregate):
     setup = Setup(
-        goal         = GOAL,
-        plan         = PLAN,
-        capabilities = CAPABILITIES,
-        examples     = EXAMPLES,
-        solution     = SOLUTION
+        goal                     = GOAL,
+        expected_plan            = EXPECTED_PLAN,
+        capabilities             = CAPABILITIES,
+        task_extraction_template = TASK_EXTRACTION_TEMPLATE,
+        plan_generation_template = PLAN_GENERATION_TEMPLATE,
+        solution                 = SOLUTION
     )
 
+    # Unfold…
     scheduler = SequentialScheduler(setup)
-    scheduler.unfold()
+    results   = scheduler.unfold()
+
+    # Collect…
+    evaluator = Evaluator(setup.goal, setup.solution, results)
+    scores    = evaluator.collect()
+
+    return scores
 
