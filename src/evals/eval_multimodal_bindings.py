@@ -100,7 +100,7 @@ class MultiModalExpression(Expression):
             scoring.append(score.value)
             # subtypes of mathematical formula
             if self.isinstanceof(LINEAR_ALGEBRA, temperature=0.0):
-                score    = (1.0 if instance_type == LINEAR_ALGEBRA else 0.0)                        | aggregate.linear_function.score
+                score    = (1.0 if str(instance_type) == LINEAR_ALGEBRA else 0.0)                   | aggregate.linear_function.score
                 scoring.append(score)
                 if score == 0.0: # avoid error when in wrong category
                     # no score for other types of mathematical formula
@@ -121,7 +121,7 @@ class MultiModalExpression(Expression):
                 success    = True
 
             elif self.isinstanceof(NUMBER_COMPARISON, temperature=0.0):
-                score    = (1.0 if instance_type == NUMBER_COMPARISON else 0.0)                     | aggregate.number_comparison.score
+                score    = (1.0 if str(instance_type) == NUMBER_COMPARISON else 0.0)                | aggregate.number_comparison.score
                 scoring.append(score)
                 if score == 0.0: # avoid error when in wrong category
                     # no score for other types of mathematical formula
@@ -244,8 +244,11 @@ The Microsoft
     base_score    = content_sym.measure(summary_sym)                                                | aggregate.content_score
     rand_seq      = Symbol(RANDOMNESS).mean(axis=0)                                                 | aggregate.rand_seq
     rand_score    = content_sym.measure(rand_seq)                                                   | aggregate.rand_score
-    succ, scoring = expr(aggregate,
-                         lambda: 1, lambda: (url, content, content_sym, base_score, rand_score))
+    succ, scoring = expr(
+        aggregate,
+        lambda: 1,
+        lambda: (url, content, content_sym, base_score, rand_score)
+    )
     return succ, {'scores': scoring}
 
 
@@ -255,7 +258,12 @@ def test_search_engine(aggregate):
     # Let's test whether or not it can extract the answer based on the CDC source.
     answer        = Symbol("Sulfuric acid (H2S04) is a corrosive substance, destructive to the skin, eyes, teeth, and lungs. Severe exposure can result in death.")
     expr          = MultiModalExpression(query)
-    succ, scoring = expr(aggregate, lambda: 2, lambda: answer, real_time=False)
+    succ, scoring = expr(
+        aggregate,
+        lambda: 2,
+        lambda: answer,
+        real_time=False
+    )
 
     return succ, {'scores': scoring}
 
@@ -273,7 +281,7 @@ def test_linear_function_computation(aggregate):
     succ, scoring = expr(
         aggregate,
         lambda: 0,
-        lambda: '(2, -11, 2) and (14, 2, 2) are linearly independent?', Symbol(LINEAR_ALGEBRA), (ref, solutions)
+        lambda: ('(2, -11, 2) and (14, 2, 2) are linearly independent?', Symbol(LINEAR_ALGEBRA), (ref, solutions))
     )
 
     return succ, {'scores': scoring}
@@ -283,7 +291,11 @@ def test_linear_function_computation(aggregate):
 def test_comparison(aggregate):
     val        = Symbol("is 100044347 bigger than 129981063.472?")
     expr       = MultiModalExpression(val)
-    succ, res  = expr(aggregate, lambda: 0, lambda: ('100044347 > 129981063.472', Symbol(NUMBER_COMPARISON), False))
+    succ, res  = expr(
+        aggregate,
+        lambda: 0,
+        lambda: ('100044347 > 129981063.472', Symbol(NUMBER_COMPARISON), False)
+    )
     return succ, {'scores': res}
 
 
@@ -292,6 +304,11 @@ def test_ocr_engine(aggregate):
     query         = "Extract the current balance from the bill image."
     answer        = Symbol("$ 21,920.37")
     expr          = MultiModalExpression(query)
-    succ, scoring = expr(aggregate, lambda: 3, lambda: answer, real_time=False)
+    succ, scoring = expr(
+        aggregate,
+        lambda: 3,
+        lambda: answer,
+        real_time=False
+    )
     return succ, {'scores': scoring}
 
