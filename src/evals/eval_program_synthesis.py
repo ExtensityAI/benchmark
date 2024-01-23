@@ -93,7 +93,12 @@ class APIExecutor(Expression):
         self._request = self._to_symbol(request)
         if self._verbose: print('[REQUEST]', self._request)
         # Generate the code to implement the API call
-        self._code    = self.builder(self._request)
+        try:
+            self._code    = self.builder(self._request)
+        except Exception as e:
+            code_score    = 0.0                                                                                         | aggregate.code_score
+            web_score     = 0.0                                                                                         | aggregate.web_score
+            return [code_score, web_score]
         if self._verbose: print('[GENERATED_CODE]', self._code)
         base_score    = code.measure(code2)                                                                             | aggregate.base_score
         rand_score    = rand.measure(refs)                                                                              | aggregate.rand_score
@@ -101,7 +106,7 @@ class APIExecutor(Expression):
         code_score    = code_score.value
         # Execute the code to define the 'run' function
         try:
-            self._result  = self.executor(self._code, request=self._request)                                            | aggregate.output
+            self._result  = self.executor(str(self._code), request=self._request)                                       | aggregate.output
             if self._verbose: print('[RESULT]:', self._result)
             web_score     = answer.measure(self._result)                                                                | aggregate.web_score
             web_score     = web_score.value
@@ -123,8 +128,8 @@ def test_api_builder(aggregate):
     refs      = Symbol([ref_code, ref_code2]).mean(axis=0)                                                              | aggregate.refs
     executor  = APIExecutor() # creates code on the fly and executes it
     scores    = executor(aggregate,
-                         'Fetch data from URL https://www.ykilcher.com/ and use Function to extract the full name of the author.', # the request
-                         lambda: (answer, refs, ref_code, ref_code2, rand_seq)) # interprets the instruction to generate a HTTP request
+                        'Fetch data from URL https://www.ykilcher.com/ and use Function to extract the full name of the author.', # the request
+                        lambda: (answer, refs, ref_code, ref_code2, rand_seq)) # interprets the instruction to generate a HTTP request
     return True, {'scores': scores}
 
 

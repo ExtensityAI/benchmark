@@ -102,6 +102,11 @@ class MultiModalExpression(Expression):
             if self.isinstanceof(LINEAR_ALGEBRA, temperature=0.0):
                 score    = (1.0 if instance_type == LINEAR_ALGEBRA else 0.0)                        | aggregate.linear_function.score
                 scoring.append(score)
+                if score == 0.0: # avoid error when in wrong category
+                    # no score for other types of mathematical formula
+                    score = 0.0                                                                     | aggregate.linear_function.answer_score
+                    scoring.append(score)
+                    return success, scoring
                 answer, solutions = details
                 answer   = Symbol(answer)                                                           | aggregate.linear_function.answer
                 # prepare for wolframalpha
@@ -118,9 +123,14 @@ class MultiModalExpression(Expression):
             elif self.isinstanceof(NUMBER_COMPARISON, temperature=0.0):
                 score    = (1.0 if instance_type == NUMBER_COMPARISON else 0.0)                     | aggregate.number_comparison.score
                 scoring.append(score)
+                if score == 0.0: # avoid error when in wrong category
+                    # no score for other types of mathematical formula
+                    score = 0.0                                                                     | aggregate.number_comparison.answer_score
+                    scoring.append(score)
+                    return success, scoring
                 answer   = details                                                                  | aggregate.number_comparison.answer
                 res      = self.solver(formula) # send directly to wolframalpha
-                score    = (1.0 if res == answer else 0.0)                                          | aggregate.number_comparison.score
+                score    = (1.0 if res == answer else 0.0)                                          | aggregate.number_comparison.answer_score
                 scoring.append(score)
                 success  = True
 
@@ -260,7 +270,11 @@ def test_linear_function_computation(aggregate):
         "The vectors (2, -11, 2) and (14, 2, 2) are not linearly dependent."
     ])
     expr          = MultiModalExpression(query)
-    succ, scoring = expr(aggregate, lambda: 0, lambda: ('(2, -11, 2) and (14, 2, 2) are linearly independent?', Symbol(LINEAR_ALGEBRA), (ref, solutions)))
+    succ, scoring = expr(
+        aggregate,
+        lambda: 0,
+        lambda: '(2, -11, 2) and (14, 2, 2) are linearly independent?', Symbol(LINEAR_ALGEBRA), (ref, solutions)
+    )
 
     return succ, {'scores': scoring}
 
