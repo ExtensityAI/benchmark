@@ -301,33 +301,43 @@ class Evaluator:
 
         # Compute the score for each task.
         self.scoring = defaultdict(list)
+        self.success = True
 
-    def collect(self):
+    def collect(self, aggregate):
         for task in self.solution:
             res = self.results[task]
             sol = self.solution[task]
             expected_result = Symbol(sol["expected_result"])
             if task == self.goal:
                 # Only for the goal we have trajectories.
-                trajectories = Symbol(sol["trajectories"]).mean()
-                rand_score   = expected_result.measure(Symbol(RANDOMNESS).mean())
-                base_score   = expected_result.measure(trajectories)
+                trajectories = Symbol(sol["trajectories"]).mean()                                              | aggregate.trajectories
+                rand_score   = expected_result.measure(Symbol(RANDOMNESS).mean())                              | aggregate.rand_score
+                base_score   = expected_result.measure(trajectories)                                           | aggregate.base_score
                 plan_score   = expected_result.measure(res["predicted_result"],
-                                                       normalize=normalize(base_score, rand_score))
+                                                       normalize=normalize(base_score, rand_score))            | aggregate.plan_score
                 self.scoring[task].append(plan_score.value)
+                [aggregate.execution_score.add(score) for score in res["execution"]] # add each execution score individually
                 self.scoring[task] += res["execution"]
+                # If any execution failed, the success of the workflow is False.
+                if 0 in res["execution"]:
+                    self.success = False
             else:
+                self.success = False
                 expected_interface = Symbol(sol["expected_interface"])
                 expected_next_task = Symbol(sol["expected_next_task"])
                 if res.get("predicted_result") is not None:
                     # We have a predicted result from the LLM.
-                    predicted_result_score = expected_result.measure(res["predicted_result"])
+                    predicted_result_score = expected_result.measure(res["predicted_result"])                  | aggregate.prediction_score
                     self.scoring[task].append(predicted_result_score.value)
+                else:
+                    penalty_score  = 0.0                                                                       | aggregate.prediction_score
+                    self.scoring[task].append(penalty_score)
 
-                predicted_interface_score = expected_interface.measure(res["predicted_interface"])
-                predicted_next_task_score = expected_next_task.measure(res["predicted_next_task"])
+                predicted_interface_score = expected_interface.measure(res["predicted_interface"])             | aggregate.interface_score
+                predicted_next_task_score = expected_next_task.measure(res["predicted_next_task"])             | aggregate.next_task_score
                 self.scoring[task].append(predicted_interface_score.value)
                 self.scoring[task].append(predicted_next_task_score.value)
+                [aggregate.execution_score.add(score) for score in res["execution"]] # add each execution score individually
                 self.scoring[task] += res["execution"]
 
         return self.scoring
@@ -508,9 +518,10 @@ def test_workflow(aggregate):
 
     # Collect…
     evaluator = Evaluator(setup.goal, setup.solution, results)
-    scores    = evaluator.collect()
+    scores    = evaluator.collect(aggregate)
+    flatten_scores = [item for sublist in scores.values() for item in sublist]
 
-    return scores
+    return evaluator.success, {'scores': flatten_scores}
 
 
 #############################################
@@ -593,7 +604,7 @@ def test_create_paper(aggregate):
     scoring.append(score.value)
 
     # visualize the computation graph
-    GraphViz()(expr, 'results/paper.html')
+    #GraphViz()(expr, 'results/paper.html')
 
     return True, {'scores': scoring}
 

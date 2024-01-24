@@ -202,12 +202,13 @@ class EvaluateBenchmark(Expression):
     def evaluate_experiment(self, experiments, evals, n_runs, seeds, config, results, type='eval_in_context_associations', tests=None):
         type = BENCHMARK_NAME_MAPPING[type]
 
+        experiment_cnt = 0
         for experiment in experiments:
             experiment = MODEL_NAME_MAPPING[experiment]
-            results[experiment][type] = {}
+            results[experiment][type]  = {}
             results[experiment][type]['scores']     = []
             results[experiment][type]['success']    = []
-            results[experiment][type]['total_runs'] = n_runs * len(evals) * len(seeds)
+            results[experiment][type]['total_runs'] = n_runs * len(seeds)
             results[experiment][type]['total_time'] = []
             results[experiment][type]['run_list']   = []
             results[experiment][type]['engine']     = None
@@ -220,7 +221,6 @@ class EvaluateBenchmark(Expression):
         print(f'Running {len(evals)} test(s) for {n_runs} run(s), each with {len(seeds)} seed(s) per experiment.')
         # We alter between the test functions and the seeds per experiment since this creates a natural API cooldown between runs
         total_experiments = len(evals) * n_runs * len(seeds) * len(experiments)
-        experiment_cnt    = 0
         # set tqdm progress bar
         progress = tqdm(total=total_experiments, desc=f'Running {type} benchmark')
         for fun_name, test_func in evals:
@@ -270,14 +270,10 @@ class EvaluateBenchmark(Expression):
                                 results[experiment][type]['run_list'].append(entry)
                             return res, elapsed_time, info['scores']
                         # Run the test function with backoff
-                        experiment_cnt += 1
                         result, elapsed_time, scores = run_with_backoff()
                         # Check if the test function is a mock test
-                        if is_mock:
-                            # remove the mock test from the results statistics
-                            experiment_cnt -= 1
-                            results[experiment][type]['total_runs'] -= 1
-                        else:
+                        if not is_mock:
+                            experiment_cnt += 1
                             results[experiment][type]['total_time'].append(elapsed_time)     # Accumulate time
                             # Check if the test function passed
                             results[experiment][type]['scores'].append(np.mean(scores))      # Count scoring
@@ -293,12 +289,12 @@ class EvaluateBenchmark(Expression):
         for experiment in experiments:
             experiment = MODEL_NAME_MAPPING[experiment]
             results[experiment][type] = {
-                'performance':  np.sum(results[experiment][type]['scores'])  / results[experiment][type]['total_runs'],
-                'success_rate': np.sum(results[experiment][type]['success']) / results[experiment][type]['total_runs'],
-                'average_time': np.mean(results[experiment][type]['total_time']),
-                'unique_tests': len(evals),
-                'seeds': seeds,
-                'runs': results[experiment][type]['run_list']
+                'performance':  np.sum(results[experiment][type]['scores'])  / experiment_cnt if experiment_cnt > 0 else 0.0,
+                'pass_rate':    np.sum(results[experiment][type]['success']) / experiment_cnt if experiment_cnt > 0 else 0.0,
+                'average_time': np.mean(results[experiment][type]['total_time']) if experiment_cnt > 0 else 0.0,
+                'unique_tests': experiment_cnt,
+                'seeds':        seeds,
+                'runs':         results[experiment][type]['run_list']
             }
 
         # partial save of current state of results to disk
@@ -307,7 +303,6 @@ class EvaluateBenchmark(Expression):
         type_results = {experiment: results[experiment][type] for experiment in results}
         with open(f'results/{type}_results.json', 'w') as f:
             json.dump(type_results, f, indent=2)
-        self.aggregator.save(f'results/{type}_aggregator.json')
 
     def forward(self, experiments=["gpt4", "llama", "gpt3.5", "zephyr", "gemini", "mistral", "random"], n_runs=3, seeds=[42, 77, 97], dummy=False, tests=None):
         # This dictionary will now hold the scoring for each test type
@@ -348,6 +343,8 @@ class EvaluateBenchmark(Expression):
         os.makedirs('results', exist_ok=True)
         with open(f'results/total_results.json', 'w') as f:
             json.dump(results, f, indent=2)
+        # save the score and vector aggregations to disk
+        self.aggregator.save(f'results/aggregation.json')
 
         return results
 
