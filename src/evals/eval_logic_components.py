@@ -85,10 +85,10 @@ def test_factorize_formula(aggregate):
     symbols_    = stmt.extract('all unique symbols as a list')
     refs        = Symbol(['a, b, c, d, x, y',
                           'y, x, a, b, c, d',
-                          'a, b, c, d, x, y',
-                          'a, b, c, d, x, y',
-                          'a, b, c, d, x, y',
-                          'a, b, c, d, x, y'])
+                          'x, b, c, d, x, a',
+                          'a, x, c, d, b, y',
+                          'x, y, a, b, c, d',
+                          'b, c, d, a, x, y'])
     mean_refs   = refs.mean()                                                                                              | aggregate.symbols_mean_refs
     base_score  = refs.cvs()                                                                                               | aggregate.symbols_base_score
     rand_score  = random_seq.measure(mean_refs)                                                                            | aggregate.symbols_rand_score

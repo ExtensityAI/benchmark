@@ -340,21 +340,18 @@ class Evaluator:
                     penalty_score  = 0.0                                                                       | aggregate.prediction_score
                     self.scoring[task].append(penalty_score)
 
-                expected_interfaces = Symbol(EXPECTED_INTERFACES)
-                expected_next_tasks = Symbol(['TASK', 'Task', 'task', 'Subtask',
-                                              'subtask', 'SUBTASK', 'SubTask', 'subTask'])
                 random_sequence     = Symbol(RANDOMNESS).mean()
-                base_interfaces_score = expected_interfaces.cvs()                                              | aggregate.base_interfaces_score
-                base_next_tasks_score = expected_next_tasks.cvs()                                              | aggregate.base_next_tasks_score
-                rand_interfaces_score = expected_interfaces.mean().measure(random_sequence)                    | aggregate.rand_interfaces_score
-                rand_next_tasks_score = expected_next_tasks.mean().measure(random_sequence)                    | aggregate.rand_next_tasks_score
+                rand_interfaces_score = expected_interface.measure(random_sequence)                            | aggregate.rand_interfaces_score
+                rand_next_tasks_score = expected_next_task.measure(random_sequence)                            | aggregate.rand_next_tasks_score
 
                 predicted_interface_score = expected_interface \
                     .measure(res["predicted_interface"],
-                             normalize=normalize(base_interfaces_score, rand_interfaces_score))                | aggregate.interface_score
+                             # @NOTE: special case, where the base score is exactly 1.0
+                             normalize=normalize(1.0, rand_interfaces_score))                                  | aggregate.interface_score
                 predicted_next_task_score = expected_next_task \
                     .measure(res["predicted_next_task"],
-                             normalize=normalize(base_next_tasks_score, rand_next_tasks_score))                | aggregate.next_task_score
+                             # @NOTE: special case, where the base score is exactly 1.0
+                             normalize=normalize(1.0, rand_next_tasks_score))                                  | aggregate.next_task_score
                 self.scoring[task].append(predicted_interface_score.value)
                 self.scoring[task].append(predicted_next_task_score.value)
                 [aggregate.execution_score.add(score) for score in res["execution"]] # add each execution score individually

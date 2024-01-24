@@ -105,7 +105,9 @@ def test_sub_and_contains(aggregate):
     # semantic understanding of subtraction
     base  = 'Hello, I would like a cup of coffee.'                                                | aggregate.base        # collect the base value
     res   = ((Symbol('Hello, I would like a cup of tea.') - Symbol('tea')) + 'coffee')            | aggregate.res         # collect the result value
-    score = res.measure(base)                                                                     | aggregate.score       # collect the score
+    rand  = Symbol(RANDOMNESS).mean().measure(base)                                               | aggregate.rand        # collect the random value
+    # @NOTE: special case, where we expect the exact solution
+    score = res.measure(base, normalize=normalize(1.0, rand))                                     | aggregate.score       # collect the score
     return True, {'scores': [score.value]}
 
 
@@ -113,6 +115,7 @@ def test_sub_and_contains(aggregate):
 def test_compare(aggregate):
     '''Test if a comparison operator between two number symbols works'''
     res = (Symbol(10) > Symbol('5'))
+    # @NOTE: Bernoulli trial
     res = (res == True)                                                                           | aggregate.res         # collect the result value
     return res, bool_success(res)
 
@@ -121,6 +124,7 @@ def test_compare(aggregate):
 def test_compare_2(aggregate):
     '''Test if a semantic comparison operator between two symbols works'''
     res = Symbol(10) < Symbol('fifteen thousand')
+    # @NOTE: Bernoulli trial
     res = (res == True)                                                                           | aggregate.res         # collect the result value
     return res, bool_success(res)
 
@@ -207,7 +211,9 @@ def test_insert_rshift(aggregate):
     sym   = Symbol('I love to eat apples')                                                        | aggregate.sym         # collect the symbol value
     res   = ('and bananas' >> sym)                                                                | aggregate.res         # collect the result value
     # expect exact solution
-    score = res.measure(base)                                                                     | aggregate.score       # collect the score
+    rand  = Symbol(RANDOMNESS).mean().measure(base)                                               | aggregate.rand        # collect the random value
+    # @NOTE: special case, where we expect the exact solution
+    score = res.measure(base, normalize=normalize(1.0, rand))                                     | aggregate.score       # collect the score
     return True, {'scores': [score.value]}
 
 
@@ -223,6 +229,7 @@ def test_extract_information(aggregate):
     succ = True
     # check if the EXTRACT operator retains the 3 essential words
     succ &= 'bananas' in res
+    # @NOTE: Bernoulli trials
     cnt += (1 if succ else 0)                                                                     | aggregate.cnt         # collect the result value
     succ &= 'mangos' in res
     cnt += (1 if succ else 0)                                                                     | aggregate.cnt         # collect the result value
@@ -254,6 +261,7 @@ def test_filter(aggregate):
     cnt  = 0
     succ = True
     # check if the FILTER operator retains the essential words
+    # @NOTE: Bernoulli trials
     succ &= 'physics' in res
     cnt += (1 if succ else 0)                                                                     | aggregate.cnt         # collect the result value
     succ &= 'mathematics' in res
@@ -279,5 +287,7 @@ def test_clean(aggregate):
     res   = sym.clean()                                                                           | aggregate.res         # collect the result value
     # check if the CLEAN operator retains the 2 essential words
     # expect exact solution
-    score = res.measure(base)                                                                     | aggregate.score       # collect the score
+    rand  = Symbol(RANDOMNESS).mean().measure(base)                                               | aggregate.rand        # collect the random value
+    # @NOTE: special case, where we expect the exact solution
+    score = res.measure(base, normalize=normalize(1.0, rand))                                     | aggregate.score       # collect the score
     return True, {'scores': [score.value]}
