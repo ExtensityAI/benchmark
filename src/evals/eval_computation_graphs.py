@@ -444,6 +444,7 @@ class SequentialScheduler:
             LOG(f"{tool.__class__.__name__} is used to execute the query <{query}>.")
             # result = self.toolkit.apply_tool(tool, query, payload=self._payload) #@NOTE: We don't need to execute this because we already have the expected result. Kept for consistency.
             self._payload = self.solution[task_name]["expected_result"]
+            self.results[task_name]["predicted_result"] = ' ' # @NOTE: We set a empty string to indicate that the LLM did not execute the task.
             self._update_memory_buffer(self._payload, task_name)
 
         # We remove the task from the pool.
