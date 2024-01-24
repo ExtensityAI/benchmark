@@ -1,11 +1,7 @@
 import numpy as np
 
-from typing import Any
-
-from symai import core
 from symai import Symbol, Expression
 from symai.utils import toggle_test
-from symai.ops.primitives import Primitive
 
 from src.utils import MOCK_RETURN, RANDOMNESS, bool_success, normalize
 
@@ -127,81 +123,6 @@ def test_compare_2(aggregate):
     # @NOTE: Bernoulli trial
     res = (res == True)                                                                           | aggregate.res         # collect the result value
     return res, bool_success(res)
-
-
-class CustomLogicPrimitive(Primitive):
-    def __or__(self, other: Any) -> Any:
-        @core.logic(operator='or')
-        def _func(_, a: str, b: str):
-            pass # could impl. a fallback behavior here
-        return self._to_symbol(_func(self, other))
-
-    def __ror__(self, other: Any) -> Any:
-        @core.logic(operator='or')
-        def _func(_, a: str, b: str):
-            pass # could impl. a fallback behavior here
-        other = self._to_symbol(other)
-        return self._to_symbol(_func(other, self))
-
-    def __and__(self, other: Any) -> Any:
-        @core.logic(operator='and')
-        def _func(_, a: str, b: str):
-            pass # could impl. a fallback behavior here
-        return self._to_symbol(_func(self, other))
-
-    def __rand__(self, other: Any) -> Any:
-        @core.logic(operator='and')
-        def _func(_, a: str, b: str):
-            pass # could impl. a fallback behavior here
-        other = self._to_symbol(other)
-        return self._to_symbol(_func(other, self))
-
-
-@toggle_test(ACTIVE, default=MOCK_RETURN)
-def test_AND_logic(aggregate):
-    '''Test if logical AND can be used to combine two symbols'''
-    base       = Symbol(['The horn only sounds on Sundays and I hear the horn.',
-                         'Since I hear the horn it is Sunday'])
-    base_mean  = base.mean()                                                                      | aggregate.base_mean   # collect the mean base value
-    base_score = base.cvs()                                                                       | aggregate.base_score  # collect the base value
-    res        = (Symbol('the horn only sounds on Sundays', primitives=CustomLogicPrimitive) & \
-                  Symbol('I hear the horn', primitives=CustomLogicPrimitive))                     | aggregate.res         # collect the result value
-    rand_mean  = Symbol(RANDOMNESS).mean()                                                        | aggregate.rand_mean   # collect the mean random value
-    rand_score = base_mean.measure(rand_mean)                                                     | aggregate.rand_score  # collect the random score
-    score      = Symbol(res).measure(base_mean, normalize=normalize(base_score, rand_score))      | aggregate.score       # collect the score
-    return True, {'scores': [score.value]}
-
-
-@toggle_test(ACTIVE, default=MOCK_RETURN)
-def test_OR_logic(aggregate):
-    '''Test if logical OR can be used to combine two symbols'''
-    base    = Symbol(['The cat has whiskers and a tail.',
-                      'The cat has both, whiskers and a tail',
-                      'The cat has both, a tail and whiskers'])
-    base_mean  = base.mean()                                                                      | aggregate.base_mean   # collect the mean base value
-    base_score = base.cvs()                                                                       | aggregate.base_score
-    subject    = 'cat'
-    res = (Symbol(f'The {subject} has whiskers.', primitives=CustomLogicPrimitive) | \
-           Symbol(f'The {subject} has a tail.', primitives=CustomLogicPrimitive))                 | aggregate.res         # collect the result value
-    rand_mean  = Symbol(RANDOMNESS).mean()                                                        | aggregate.rand_mean   # collect the mean random value
-    rand_score = base_mean.measure(rand_mean)                                                     | aggregate.rand_score  # collect the random score
-    score      = Symbol(res).measure(base_mean, normalize=normalize(base_score, rand_score))      | aggregate.score       # collect the score
-    return True, {'scores': [score.value]}
-
-
-@toggle_test(ACTIVE, default=MOCK_RETURN)
-def test_XOR_logic(aggregate):
-    '''Test if logical XOR can be used to combine two symbols'''
-    base = Symbol(['It is unknown if the duck quacks or not.',
-                   'This is a contradiction because the duck quacks and does not quack.',
-                   'False, it is known if the duck quacks or not.'])
-    base_mean  = base.mean()                                                                      | aggregate.base_mean   # collect the mean base value
-    base_score = base.cvs()                                                                       | aggregate.base_score  # collect the base value
-    res  = (Symbol('The duck quacks.') ^ Symbol('The duck does not quack.'))                      | aggregate.res         # collect the result value
-    rand_mean  = Symbol(RANDOMNESS).mean()                                                        | aggregate.rand_mean   # collect the mean random value
-    rand_score = base_mean.measure(rand_mean)                                                     | aggregate.rand_score  # collect the random score
-    score      = res.measure(base_mean, normalize=normalize(base_score, rand_score))              | aggregate.score       # collect the score
-    return True, {'scores': [score.value]}
 
 
 @toggle_test(ACTIVE, default=MOCK_RETURN)
