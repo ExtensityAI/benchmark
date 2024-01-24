@@ -124,6 +124,13 @@ Based on the pool of tasks, the correct answer is:
 >Task 2: Write a summary of the SymbolicAI framework
 """
 
+EXPECTED_INTERFACES = [
+    Interface("serpapi").__class__.__name__,
+    Interface("selenium").__class__.__name__,
+    Interface("wolframalpha").__class__.__name__,
+    "NoneType"
+]
+
 SOLUTION = {
     ">Task 1: Search for U-235": {
         "expected_interface": Interface("serpapi").__class__.__name__,
@@ -310,7 +317,7 @@ class Evaluator:
             expected_result = Symbol(sol["expected_result"])
             if task == self.goal:
                 # Only for the goal we have trajectories.
-                trajectories = Symbol(sol["trajectories"]).mean()                                              | aggregate.trajectories
+                trajectories = Symbol(sol["trajectories"]).mean()
                 rand_score   = expected_result.measure(Symbol(RANDOMNESS).mean())                              | aggregate.rand_score
                 base_score   = expected_result.measure(trajectories)                                           | aggregate.base_score
                 plan_score   = expected_result.measure(res["predicted_result"],
@@ -333,8 +340,21 @@ class Evaluator:
                     penalty_score  = 0.0                                                                       | aggregate.prediction_score
                     self.scoring[task].append(penalty_score)
 
-                predicted_interface_score = expected_interface.measure(res["predicted_interface"])             | aggregate.interface_score
-                predicted_next_task_score = expected_next_task.measure(res["predicted_next_task"])             | aggregate.next_task_score
+                expected_interfaces = Symbol(EXPECTED_INTERFACES)
+                expected_next_tasks = Symbol(['TASK', 'Task', 'task', 'Subtask',
+                                              'subtask', 'SUBTASK', 'SubTask', 'subTask'])
+                random_sequence     = Symbol(RANDOMNESS).mean()
+                base_interfaces_score = expected_interfaces.cvs()                                              | aggregate.base_interfaces_score
+                base_next_tasks_score = expected_next_tasks.cvs()                                              | aggregate.base_next_tasks_score
+                rand_interfaces_score = expected_interfaces.mean().measure(random_sequence)                    | aggregate.rand_interfaces_score
+                rand_next_tasks_score = expected_next_tasks.mean().measure(random_sequence)                    | aggregate.rand_next_tasks_score
+
+                predicted_interface_score = expected_interface \
+                    .measure(res["predicted_interface"],
+                             normalize=normalize(base_interfaces_score, rand_interfaces_score))                | aggregate.interface_score
+                predicted_next_task_score = expected_next_task \
+                    .measure(res["predicted_next_task"],
+                             normalize=normalize(base_next_tasks_score, rand_next_tasks_score))                | aggregate.next_task_score
                 self.scoring[task].append(predicted_interface_score.value)
                 self.scoring[task].append(predicted_next_task_score.value)
                 [aggregate.execution_score.add(score) for score in res["execution"]] # add each execution score individually
@@ -384,10 +404,10 @@ class SequentialScheduler:
         try:
             predicted_plan = self.plan_generator.generate_plan(self.goal)
             self.results[self.goal]["predicted_result"] = predicted_plan.value
-            self.results[self.goal]["execution"].append(1)
+            #self.results[self.goal]["execution"].append(1) # this regularly works, so we don't need to reward it -> identity function
         except Exception as e:
             self.results[self.goal]["predicted_result"] = str(e)
-            self.results[self.goal]["execution"].append(0)
+            self.results[self.goal]["execution"].append(0) # if it fails, we punish it
 
         # We store the expected plan.
         self.solution[self.goal]["expected_result"] = self._plan_as_str()
@@ -398,7 +418,7 @@ class SequentialScheduler:
             # assert False, "This is a test."
             tool = self.toolkit.pick_tool(task_name)
             self.results[task_name]["predicted_interface"] = tool.__class__.__name__ #@NOTE: Here we score whether the LLM picked the correct interface.
-            self.results[task_name]["execution"].append(1)
+            #self.results[task_name]["execution"].append(1) # identity function
         except Exception as e:
             tool = self.solution[task_name]["expected_interface"]
             tool = None if tool == "NoneType" else tool
@@ -415,7 +435,7 @@ class SequentialScheduler:
                 # assert False, "This is a test."
                 result = self._payload.query(query, temperature=0.0)
                 self.results[task_name]["predicted_result"] = str(result.value) #@NOTE: Here we score whether the LLM picked the correct interface.
-                self.results[task_name]["execution"].append(1)
+                #self.results[task_name]["execution"].append(1) # identity function
             except Exception as e:
                 result = self.solution[task_name]["expected_result"]
                 self.results[task_name]["predicted_result"] = str(e) #@NOTE: Bad luck is still no luck at all.
@@ -437,7 +457,7 @@ class SequentialScheduler:
             # assert False, "This is a test."
             next_task = self.task_extractor.pick_next_task(self._prepare_data())
             self.results[task_name]["predicted_next_task"] = next_task #@NOTE: Here we score whether the LLM picked the correct next task.
-            self.results[task_name]["execution"].append(1)
+            #self.results[task_name]["execution"].append(1) # identity function
         except Exception as e:
             next_task = self.solution[task_name]["expected_next_task"]
             self.results[task_name]["predicted_next_task"] = str(e) #@NOTE: Bad luck is still no luck at all.

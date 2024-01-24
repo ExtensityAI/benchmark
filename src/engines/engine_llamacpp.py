@@ -90,8 +90,9 @@ class LLaMACppClientEngine(Engine):
 
         # Create multipart/form-data payload
         # Since the LLaMA server expects a JSON payload, we construct JSON data
+        prompt  = prompts[0] if prompts[0] is not None and len(prompts[0]) > 0 else ' ' # @NOTE: space char to produce at least empty prompt and avoid exception on server side
         payload = {
-            'prompt': prompts[0],
+            'prompt': prompt,
             **model_kwargs
         }
         headers = {'Content-Type': 'application/json'}
@@ -146,7 +147,7 @@ class LLaMACppClientEngine(Engine):
         user:   str = ""
         system: str = ""
 
-        if argument.prop.disable_verbose_output_suppression:
+        if argument.prop.suppress_verbose_output:
             system += _non_verbose_output
         system = f'{system}\n' if system and len(system) > 0 else ''
 
