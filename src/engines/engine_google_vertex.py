@@ -24,7 +24,7 @@ class GoogleGeminiEngine(Engine):
         genai.configure(api_key=api_key)
         # Create a generative model instance from Vertex AI
         self.model = genai.GenerativeModel(model_name=model)
-        self.max_tokens     = 32_760 - 100 # TODO: account for tolerance. figure out how their magic number works to compute reliably the precise max token size
+        self.max_tokens     = 32_760 - 100 # @NOTE: account for tolerance.
         self.seed           = None
         self.except_remedy  = None
 
@@ -44,7 +44,7 @@ class GoogleGeminiEngine(Engine):
             self.except_remedy = kwargs['except_remedy']
 
     def compute_remaining_tokens(self, prompts: list) -> int:
-        return int((8_192) * 0.99) # TODO: figure out how their magic number works to compute reliably the precise max token size
+        return int((8_192) * 0.99) # @NOTE: account for tolerance.
 
     def forward(self, argument):
         kwargs              = argument.kwargs

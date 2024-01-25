@@ -193,7 +193,6 @@ class EvaluateBenchmark(Expression):
 
         # Check if engine is available and send request to avoid cold start of engine
         # Set the engine configuration
-        # TODO: Add more configuration options
         EngineRepository.command('neurosymbolic', seed=seed)
         EngineRepository.command('neurosymbolic', except_remedy=except_remedy)
 

@@ -58,7 +58,7 @@ class LLaMACppClientEngine(Engine):
         return 2048
 
     def compute_remaining_tokens(self, prompts: list) -> int:
-        return int((1024) * 0.99) # TODO: figure out how their magic number works to compute reliably the precise max token size
+        return int((1024) * 0.99) # @NOTE: account for tolerance.
 
     def forward(self, argument):
         prompts             = argument.prop.prepared_input

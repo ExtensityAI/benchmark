@@ -209,7 +209,7 @@ def test_dsl_writing_capability(aggregate):
     base_score   = formulations.cvs()                                                                                      | aggregate.base_score
     score        = form1.measure(res, normalize=normalize(base_score, rand_score))                                         | aggregate.dsl_score
     scoring.append(score.value)
-    # vary basic check for syntax violations TODO: apply grammar check
+    # vary basic check for syntax violations @NOTE: one can apply a more sophisticated grammar based check here
     if score < rand_score or ('("' in str(res) or \
                               '")' in str(res) or \
                               '",' in str(res) or \
