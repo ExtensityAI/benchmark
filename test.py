@@ -31,7 +31,7 @@ LATEX_TEMPLATE = """
   \\begin{{minipage}}{{.6\\textwidth}}
     \\centering
     \\begin{{adjustbox}}{{max width=\\linewidth}}
-    \\begin{{tabular}}{{lcccccc}}
+    \\begin{{tabular}}{{lccccccc}}
       \\toprule
       \\textbf{{Benchmarks}} &  {model_names} \\\\
       \\midrule
@@ -61,6 +61,40 @@ LATEX_TEMPLATE = """
 """
 
 
+def sort_by_name(model):
+    if 'GPT-4' in model:
+        return 0
+    elif 'GPT-3.5' in model:
+        return 1
+    elif 'Gemini' in model:
+        return 2
+    elif 'LlaMA' in model:
+        return 3
+    elif 'Mistral' in model:
+        return 4
+    elif 'Zephyr' in model:
+        return 5
+    elif 'Random' in model:
+        return 6
+    else:
+        return 7
+
+
+def sort_items_by_name(model):
+    return sort_by_name(model[0])
+
+
+remap_name = {
+    'GPT-4 Turbo': 'GPT-4',
+    'GPT-3.5 Turbo': 'GPT-3.5',
+    'Gemini-Pro': 'Gemini-Pro',
+    'LlaMA 2 13B': 'LlaMA 2',
+    'Zephyr 7B': 'Zephyr',
+    'Mistral 7B': 'Mistral',
+    'Random': 'Random'
+}
+
+
 def create_latex_result(data):
     # Define the directory and file name
     directory = 'tmp'
@@ -70,10 +104,13 @@ def create_latex_result(data):
     filepath = os.path.join(directory, filename)
 
     # Gather the model names
-    model_names = " & ".join(key for key in data.keys())
+    data_model_names = list(data.keys())
+    # Sort the models by name
+    data_model_names.sort(key=sort_by_name)
+    model_names = " & ".join(remap_name[key] for key in data_model_names)
 
     # Initialize the total scores
-    total_scores = {model: 0.0 for model in data.keys()}
+    total_scores = {model: 0.0 for model in data_model_names}
 
     # Prepare table content
     benchmark_rows = {bench_name: "" for bench_name in BENCHMARK_NAME_MAPPING.values()}
@@ -82,7 +119,11 @@ def create_latex_result(data):
             print(f"Skipping benchmark because not all results are computed. Did not find `{bench_name}` in `{data.keys()}`")
             return
         # Initialize list to keep the scores for this benchmark to find the best model
-        scores = [(model, values[bench_name]['performance']) for model, values in data.items()]
+        scores = [(model, np.mean([np.mean(run['scores']) for run in values[bench_name]['runs']])) for model, values in data.items()]
+        # sort the scores by name following this order: GPT-4, GPT-3.5, Gemini-Pro, LlaMA 2, Mistral, Zephyr, Random
+        # write custom sorting function to sort by name
+        scores.sort(key=sort_items_by_name)
+
         best_score = max(scores, key=lambda x: x[1])[1]
 
         # Create row for the latex table and update the total scores
@@ -113,7 +154,7 @@ def create_latex_result(data):
         benchmark_program_synthesis_row=benchmark_rows[BENCHMARK_NAME_MAPPING['eval_program_synthesis']],
         benchmark_components_row=benchmark_rows[BENCHMARK_NAME_MAPPING['eval_logic_components']],
         benchmark_computation_graphs_row=benchmark_rows[BENCHMARK_NAME_MAPPING['eval_computation_graphs']],
-        total_row='Total' + total_values
+        total_row=total_values
     )
 
     # Print the latex table to the console
@@ -136,7 +177,7 @@ def create_plot(data):
 
     # Prepare data for plotting
     values = [list(d.values()) for d in data.values()]
-    values = [[v['performance'] for v in sublist] for sublist in values]
+    values = [[np.mean([np.mean(run['scores']) for run in v['runs']]) for v in sublist] for sublist in values]
     values = np.array(values)
 
     # Create a radar chart
@@ -147,20 +188,25 @@ def create_plot(data):
     fig, ax = plt.subplots(figsize=(8, 8), subplot_kw=dict(polar=True))
     sns.set_theme(context='paper', style='whitegrid')
 
-    def add_to_radar(model, color):
+    def add_to_radar(values, model_name, color):
         if model_name == MODEL_NAME_MAPPING['random']:
-            val = np.max(model) # Use the maximum value to draw a circle for the random model
+            val = np.max(values) # Use the maximum value to draw a circle for the random model
             angles_circle = np.linspace(0, 2 * np.pi, 100)  # Use 100 points to make a smooth circle
             ax.plot(angles_circle, np.full_like(angles_circle, val), '--', linewidth=2, color=color, label=model_name)
             ax.fill(angles_circle, np.full_like(angles_circle, val), color=color, alpha=0.25)
         else:
-            ax.plot(angles, model, color=color, linewidth=2, label=model_name)
-            ax.fill(angles, model, color=color, alpha=0.25)
+            ax.plot(angles, values, color=color, linewidth=2, label=model_name)
+            ax.fill(angles, values, color=color, alpha=0.25)
 
+    colors = [ax._get_lines.get_next_color() for _ in range(len(models))]
+    zippped = zip(values, models, colors)
+    # sort based on name
+    zippped = sorted(zippped, key=lambda x: sort_by_name(x[1]))
 
     # Add each model to the radar chart
-    for values, model_name in zip(values, models):
-        add_to_radar(values, ax._get_lines.get_next_color())
+    for values, model_name, color in zippped:
+        model_name = remap_name[model_name]
+        add_to_radar(values, model_name, color)
 
     # Add labels to the plot with increased label padding
     label_padding = 1.1  # Adjust label padding as needed

@@ -289,8 +289,8 @@ class EvaluateBenchmark(Expression):
         for experiment in experiments:
             experiment = MODEL_NAME_MAPPING[experiment]
             results[experiment][type] = {
-                'performance':  np.sum(results[experiment][type]['scores'])  / (experiment_cnt / len(experiments)) if experiment_cnt > 0 else 0.0,
-                'pass_rate':    np.sum(results[experiment][type]['success']) / (experiment_cnt / len(experiments)) if experiment_cnt > 0 else 0.0,
+                'performance':  np.mean(results[experiment][type]['scores'])     if experiment_cnt > 0 else 0.0,
+                'pass_rate':    np.mean(results[experiment][type]['success'])    if experiment_cnt > 0 else 0.0,
                 'average_time': np.mean(results[experiment][type]['total_time']) if experiment_cnt > 0 else 0.0,
                 'unique_tests': experiment_cnt,
                 'seeds':        seeds,
