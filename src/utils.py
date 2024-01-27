@@ -84,6 +84,11 @@ def frechet_measure(self, other, normalize=None):
     return self.distance(other, kernel='frechet', normalize=normalize, sigma1=sigma1, sigma2=sigma2)
 
 
+def mmd_measure(self, other, normalize=None):
+    # Measure the distance between two symbol distributions
+    return 1 - np.clip(self.distance(other, kernel='mmd', normalize=normalize), 0.0, 1.0)
+
+
 # set the default measure
 def measure(self, other, normalize=None):
     # use distance measure as the default measure
