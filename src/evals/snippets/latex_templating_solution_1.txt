@@ -1,0 +1,58 @@
+```python
+def create_latex_result(data):
+    """
+    This function creates a latex table from the data dictionary.
+
+    :param data: A dictionary with the results of the benchmarks
+    :return: A latex table as a string
+    """
+    # Gather the model names
+    model_names = " & ".join(key for key in data.keys())
+
+    # Initialize the total scores
+    total_scores = {model: 0.0 for model in data.keys()}
+
+    # Prepare table content
+    benchmark_rows = {bench_name: "" for bench_name in BENCHMARK_NAME_MAPPING.values()}
+    for bench_name in BENCHMARK_NAME_MAPPING.values():
+        if bench_name not in str(list(data.values())):
+            print(f"Skipping benchmark because not all results are computed. Did not find `{bench_name}` in `{data.keys()}`")
+            return
+        # Initialize list to keep the scores for this benchmark to find the best model
+        scores = [(model, values[bench_name]['performance']) for model, values in data.items()]
+        best_score = max(scores, key=lambda x: x[1])[1]
+
+        # Create row for the latex table and update the total scores
+        row = f"{bench_name}"
+        for model, score in scores:
+            # Add to the total score
+            total_scores[model] += score
+            # Format row with best model in bold
+            if score == best_score:
+                row += f" & \\textbf{{{score:.2f}}}"
+            else:
+                row += f" & {score:.2f}"
+        benchmark_rows[bench_name] = row
+
+    # Compute the average of total scores
+    for model in total_scores.keys():
+        total_scores[model] /= len(BENCHMARK_NAME_MAPPING)
+
+    # Best total performance in bold
+    best_total = max(total_scores.values())
+    total_values = " & ".join(f"\\textbf{{{v:.2f}}}" if v == best_total else f"{v:.2f}" for v in total_scores.values())
+
+    # Use the LATEX_TEMPLATE and inject the benchmark rows
+    latex_table = LATEX_TEMPLATE.format(
+        model_names=model_names,
+        benchmark_in_context_association_row=benchmark_rows[BENCHMARK_NAME_MAPPING['eval_in_context_associations']],
+        benchmark_multimodality_row=benchmark_rows[BENCHMARK_NAME_MAPPING['eval_multimodal_bindings']],
+        benchmark_program_synthesis_row=benchmark_rows[BENCHMARK_NAME_MAPPING['eval_program_synthesis']],
+        benchmark_components_row=benchmark_rows[BENCHMARK_NAME_MAPPING['eval_logic_components']],
+        benchmark_computation_graphs_row=benchmark_rows[BENCHMARK_NAME_MAPPING['eval_computation_graphs']],
+        total_row='Total' + total_values
+    )
+
+    # Print the latex table to the console
+    return latex_table
+```

@@ -1,0 +1,29 @@
+```python
+def create_latex_result(data):
+    modelnames = " & ".join(key for key in data.keys())
+    totalscores = {model: 0.0 for model in data.keys()}
+    benchmarkrows = {bench_name: "" for bench_name in BENCHMARK_NAME_MAPPING.values()}
+    for bench_name in BENCHMARK_NAME_MAPPING.values():
+        scores = [(model, values[bench_name]['performance']) for model, values in data.items()]
+        best_score = max(scores, key=lambda x: x[1])[1]
+        row = f"{bench_name}"
+        for model, score in scores:
+            if score == best_score:
+                benchmarkrows[bench_name] = row + f" & \\textbf{{{score:.2f}}}"
+            else:
+                benchmarkrows[bench_name] = row + f" & {score:.2f}"
+            totalscores[model] += score
+    for model in totalscores.keys():
+        totalscores[model] /= len(BENCHMARK_NAME_MAPPING)
+    best_total = max(totalscores.values())
+    total_values = " & ".join(f"\\textbf{{{v:.2f}}}" if v == best_total else f"{v:.2f}" for v in totalscores.values())
+    return LATEX_TEMPLATE.format(
+        model_names=modelnames,
+        benchmark_in_context_association_row=benchmarkrows[BENCHMARK_NAME_MAPPING['eval_in_context_associations']],
+        benchmark_multimodality_row=benchmarkrows[BENCHMARK_NAME_MAPPING['eval_multimodal_bindings']],
+        benchmark_program_synthesis_row=benchmarkrows[BENCHMARK_NAME_MAPPING['eval_program_synthesis']],
+        benchmark_components_row=benchmarkrows[BENCHMARK_NAME_MAPPING['eval_logic_components']],
+        benchmark_computation_graphs_row=benchmarkrows[BENCHMARK_NAME_MAPPING['eval_computation_graphs']],
+        total_row='Total' + total_values
+    )
+```

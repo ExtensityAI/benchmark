@@ -1,0 +1,12 @@
+In this paper we describe a complex information processing system, which we call the logic theory machine, that is capable of discovering proofs for theorems in symbolic logic. This system, in contrast to the systematic algorithms that are ordinarily employed in computation, relies heavily on heuristic methods similar to those that have been observed in . human problem solving activity. The specification is written in a formal language, of the nature of a pseudo-code, that is suitable for coding for digital computers. However, the present paper is concerned exclusively with specification of the system, and not with its realization in a computer. The logic theory machine is part of a program of research to understand complex information processing systems by specifying and synthesizing a substantial variety of such systems for empirical study.
+
+@article{Newell:56,
+  title={The logic theory machine--A complex information processing system},
+  author={A. Newell and H. Simon},
+  journal={IRE Transactions on information theory},
+  volume={2},
+  number={3},
+  pages={61--79},
+  year={1956},
+  publisher={IEEE}
+}

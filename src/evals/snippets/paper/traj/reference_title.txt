@@ -1,0 +1,1 @@
+\title{SymbolicAI: An Integrated Framework Merging Generative Models with Logic Solvers}

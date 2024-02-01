@@ -1,0 +1,32 @@
+\begin{figure*}[ht]
+  \centering
+  \begin{minipage}{.57\textwidth}
+    \centering
+    \begin{tabular}{lcccccc}
+      \toprule
+      \textbf{Benchmarks} &  GPT-3.5 Turbo & GPT-4 Turbo & Gemini-Pro & LlaMA 2 13B & Mistral 7B & Zephyr 7B \\
+      \midrule
+      Associations & 0.80 & \textbf{0.95} & 0.90 & 0.60 & 0.67 & 0.70 \\
+      Modality & 0.60 & 0.85 & \textbf{0.89} & 0.45 & 0.50 & 0.60 \\
+      Code & 0.70 & \textbf{0.80} & 0.78 & 0.40 & 0.45 & 0.50 \\
+      Components & 0.67 & \textbf{0.85} & 0.75 & 0.30 & 0.40 & 0.43 \\
+      Graphs & 0.70 & \textbf{0.90} & 0.70 & 0.45 & 0.30 & 0.36 \\
+      \midrule
+      \textbf{Total} & Total0.69 & \textbf{0.87} & 0.80 & 0.44 & 0.46 & 0.52 \\
+      \bottomrule
+    \end{tabular}
+    % You could also add a subcaption specific to the table here if needed (use the subcaption package)
+    % \subcaption{Performance benchmark results.}
+    \label{tab:benchmark_results}
+  \end{minipage}%
+  ~
+  \begin{minipage}{.43\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{images/benchmark_comparison_chart.pdf}
+    % You could also add a subcaption specific to the figure here if needed (use the subcaption package)
+    % \subcaption{Benchmark comparison chart.}
+    \label{fig:spider_plot}
+  \end{minipage}
+  \caption{Placeholder for performance benchmarks and comparison chart for various models.}
+  \label{fig:my_label} % General label for the whole figure (both image and table)
+\end{figure*}

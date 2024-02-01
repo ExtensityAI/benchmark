@@ -1,0 +1,34 @@
+\title{SymbolicAI: A framework for logic-based approaches combining generative models and solvers}
+
+\begin{abstract}
+
+We introduce \emph{SymbolicAI}, a versatile and modular framework that employs a logic-based approach to concept learning and flow management in generative processes. This framework facilitates the seamless integration of generative models with a diverse range of solvers. We integrate large language models (LLMs) and probabilistic programming principles to tackle complex tasks and utilize differentiable and classical programming paradigms with their respective strengths. Central to our framework are neuro-symbolic engines, which include LLMs for task executions of natural and formal language instructions. Our approach establishes a set of  operations that manipulate a data stream and guide the LLMs to align with the user's objectives. Inherently, these operations exhibit polymorphic, compositional and self-referential properties, which facilitate the implementation of various data types and behaviors. As a result, we can seamlessly transition between capabilities of various foundation models endowed with zero and few-shot learning capabilities and specialized, fine-tuned models or solvers proficient in addressing specific problems. In turn, our framework enables the creation of explainable computational graphs through compositional expressions and functions.
+
+\end{abstract}
+
+\section{Related Work}
+
+The field of symbolic AI has its foundations in the works of the Logic Theorist (LT) \citep{Newell:56} and the General Problem Solver (GPS) \citep{Newell:57}.
+These programs represented the first steps in automated reasoning and problem-solving using symbolic representations.
+Despite their advancements, both faced challenges in dealing with the complexity of real-world problems, particularly due to combinatorial explosion.
+To address these limitations, the Soar \citep{Laird:87} cognitive architecture was developed, advancing the notion that intelligent behavior results from goal-oriented search through a problem space \citep{Newell:72, McCarthy:06}, with each step consisting of selecting and applying operators.
+Soar introduced components like reinforcement learning, impasses, substates, and chunking to enhance its problem-solving capabilities.
+
+\section{Framework}
+
+In this section, we discuss the design choices pertaining to implementation and the specifics of the framework we've employed.
+
+Analogous to the Python \texttt{object} type, the base type of SymbolicAI is a symbol, and is represented through its name equivalent base type \texttt{Symbol}.
+A \texttt{Symbol} object marks a non-reducible atomic unit.
+All other sub-types, such as \texttt{Expression} and its derivatives, are analogous to their mathematical namesakes, representing expressions or units that can be further evaluated and simplified.
+These sub-types inherit from \texttt{Symbol} the base attributes, primitive operators, and helper methods.
+Furthermore, each \texttt{Symbol} object contains valued and vector-valued representations, obtained through \texttt{value} and \texttt{embedding} attributes.
+The latter, in particular, serve as a means to impute a symbol's current context, akin to embedding text and storing it as a PyTorch tensor.
+Although for an LLM, the numerical tensors may lack inherent meaning, the vector-valued representations play a strategic role: when composite symbols coalesce into more complex expressions, these embedded tensors become amenable to context updates through gradient-based optimization.
+This choice is critical in the dynamic landscape of symbolic interactions, particularly for developing self-evolving systems.
+
+To enable the processing of symbols by LLMs, we assume that each \texttt{Symbol} object is facilitated by Python's native string functionality, where the \texttt{\_\_str\_\_} method enables a string representation.
+Worth noting is that encoding a complex object into a string sometimes precludes perfect object reconstitution.
+However, this concern does not substantially impede our methodology: we can employ approximations or proxy representations stored by the vector-valued property to effectively re-map objects.
+These representations are obtained through respective embedding models.
+Therefore, we can theoretically assert that any Python object \emph{is} parsable by an LLM by design.

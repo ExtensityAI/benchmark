@@ -1,0 +1,28 @@
+```python
+from z3 import Solver, Function, EnumSort, IntSort, Const, And, sat
+
+# Define the enumerated sort for family members
+FamilyMember, (Bob, John, Jay) = EnumSort('FamilyMember', ('Bob', 'John', 'Jay'))
+
+# Uninterpreted functions for family relationships
+father_of = Function('father_of', FamilyMember, FamilyMember)
+brother_of = Function('brother_of', FamilyMember, FamilyMember)
+
+S = Solver()
+
+# Facts based on the problem statement
+S.add(father_of(John) == Bob)
+S.add(father_of(Jay) == Bob)
+S.add(brother_of(Jay) == John)
+
+# Query to determine Jay's brother
+query = Const("query", FamilyMember)
+S.add(query == brother_of(Jay))
+
+r = S.check()
+if r == sat:
+    m = S.model()
+    answer = m[query]
+else:
+    answer = "Failed"
+```

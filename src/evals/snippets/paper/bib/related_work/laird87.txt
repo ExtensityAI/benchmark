@@ -1,0 +1,12 @@
+The ultimate goal of work in cognitive architecture is to provide the foundation for a system capable of general intelligent behavior. That is, the goal is to provide the underlying structure that would enable a system to perform the full range of cognitive tasks, employ the full range of problem solving methods and representations appropriate for the tasks, and learn about all aspects of the tasks and its performance on them. In this article we present SOAR, an implemented proposal for such an architecture. We describe its organizational principles, the system as currently implemented, and demonstrations of its capabilities.
+
+@article{Laird:87,
+    title = {SOAR: An architecture for general intelligence},
+    journal = {Artificial Intelligence},
+    volume = {33},
+    number = {1},
+    pages = {1-64},
+    year = {1987},
+    issn = {0004-3702},
+    author = {J. E. Laird and A. Newell and P. S. Rosenbloom}
+}

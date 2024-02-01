@@ -1,0 +1,18 @@
+\section{Framework}
+
+In this section, we discuss the design choices pertaining to implementation and the specifics of the framework we've employed.
+
+Analogous to the Python \texttt{object} type, the base type of SymbolicAI is a symbol, and is represented through its name equivalent base type \texttt{Symbol}.
+A \texttt{Symbol} object marks a non-reducible atomic unit.
+All other sub-types, such as \texttt{Expression} and its derivatives, are analogous to their mathematical namesakes, representing expressions or units that can be further evaluated and simplified.
+These sub-types inherit from \texttt{Symbol} the base attributes, primitive operators, and helper methods.
+Furthermore, each \texttt{Symbol} object contains valued and vector-valued representations, obtained through \texttt{value} and \texttt{embedding} attributes.
+The latter, in particular, serve as a means to impute a symbol's current context, akin to embedding text and storing it as a PyTorch tensor.
+Although for an LLM, the numerical tensors may lack inherent meaning, the vector-valued representations play a strategic role: when composite symbols coalesce into more complex expressions, these embedded tensors become amenable to context updates through gradient-based optimization.
+This choice is critical in the dynamic landscape of symbolic interactions, particularly for developing self-evolving systems.
+
+To enable the processing of symbols by LLMs, we assume that each \texttt{Symbol} object is facilitated by Python's native string functionality, where the \texttt{\_\_str\_\_} method enables a string representation.
+Worth noting is that encoding a complex object into a string sometimes precludes perfect object reconstitution.
+However, this concern does not substantially impede our methodology: we can employ approximations or proxy representations stored by the vector-valued property to effectively re-map objects.
+These representations are obtained through respective embedding models.
+Therefore, we can theoretically assert that any Python object \emph{is} parsable by an LLM by design.

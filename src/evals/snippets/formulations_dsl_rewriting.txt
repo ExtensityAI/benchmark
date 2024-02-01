@@ -1,0 +1,34 @@
+// Query
+IsBrotherOf(jay, john, bob) <- BrotherOf(jay, john) AND FatherOf(bob, jay) AND FatherOf(bob, john);
+
+// Facts
+BrotherOf(x, y) <- HAS(x, brother) AND HAS(y, brother) AND Sibling(x, y);
+FatherOf(x, y) <- HAS(x, son) AND ParentOf(x, y);
+ParentOf(x, y) <- IS(x, parent) AND IS(y, child);
+Sibling(x, y) <- IS(x, father) AND IS(y, father) OR IS(x, mother) AND IS(y, mother);
+
+// Primitive Types
+son: "a male child in relation to his parents";
+father: "a male parent";
+mother: "a female parent";
+brother: "a male sibling";
+parent: "a person's father or mother";
+child: "a young human being below the legal age of majority associated to this person as a parent";
+
+
+
+IsBrotherOf(x, y, z) <- BrotherOf(x, y) AND FatherOf(z, x) AND FatherOf(z, y);
+BrotherOf(x, y) <- Sibling(x, y) AND IS(x, brother) AND IS(y, brother);
+FatherOf(x, y) <- ParentOf(x, y) AND IS(y, son);
+Sibling(x, y) <- CommonParent(x, y);
+CommonParent(x, y) <- (IS(x, father) AND IS(y, father)) OR (IS(x, mother) AND IS(y, mother));
+ParentOf(x, y) <- IS(x, parent) AND IS(y, child);
+IS(x, brother) <- TRUE; // Implied by the use of 'x, brother' and 'y, brother'
+IS(y, brother) <- TRUE;
+IS(y, son) <- TRUE;
+father: "a male parent of a child";
+mother: "a female parent of a child";
+parent: "is acknowledged as being mother or father of someone";
+child: "is acknowledged as being son or daughter of someone";
+brother: "is acknowledged as being related as a male sibling";
+son: "is acknowledged as being related to someone as a male child";

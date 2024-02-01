@@ -1,0 +1,86 @@
+```python
+from z3 import Int, Solver, And, Const, IntSort, EnumSort, Function
+
+def solve_puzzle(S: Solver) -> Const:
+    # Define the enumeration sort for the individuals
+    Person, (BobE, JohnE, JayE, JaysBrotherE, FatherE) = EnumSort('Person', ['Bob', 'John', 'Jay', 'JaysBrother', 'Father'])
+
+    # Define a function from integers to persons
+    identity = Function('identity', IntSort(), Person)
+
+    # Define integer variables to represent the identities of the individuals
+    Bob, John, Jay, JaysBrother, Father = Int('Bob'), Int('John'), Int('Jay'), Int('JaysBrother'), Int('Father')
+
+    # Add puzzle constraints
+    S.add(identity(1) == BobE, identity(2) == JohnE, identity(3) == JayE)
+    S.add(Bob == 1, Father == 1, John == 2, Jay == 3, JaysBrother == John)
+    S.add(And(Father == Bob, John != Jay, Jay != Father))
+    S.add(And(JaysBrother == John, Jay != Father, Father == Bob))
+
+    # Create a new constant of Person sort and equate it to JaysBrother enumeration
+    query = Const("query", Person)
+    S.add(query == identity(JaysBrother))
+
+    return query
+```
+
+
+```python
+from z3 import Solver, Bool, And, Not, Const, BoolSort, EnumSort, Function, IntSort
+
+def solve_puzzle(S: Solver) -> Const:
+    # Define the enumeration sort for the individuals
+    Person, (BobE, JohnE, JayE, JaysBrotherE, FatherE) = EnumSort('Person', ['Bob', 'John', 'Jay', 'JaysBrother', 'Father'])
+
+    # Define a function from boolean to persons (for brother status)
+    is_brother = Function('is_brother', Person, BoolSort())
+
+    # Define the relationships
+    S.add(is_brother(JohnE) == True)  # John is a brother
+    S.add(is_brother(JayE) == True)   # Jay is a brother
+
+    # Bob has two sons, John and Jay
+    S.add(And(is_brother(JohnE), is_brother(JayE)))
+
+    # Jay has one brother, and John must be the brother
+    S.add(is_brother(JayE) == is_brother(JohnE))
+
+    # Jay's brother (John) has a brother (Jay) and a father
+    S.add(And(is_brother(JaysBrotherE), JaysBrotherE != FatherE))
+
+    # Create a new constant of Person sort to represent JaysBrother
+    query = Const("query", Person)
+    S.add(query == JohnE)  # John is Jay's brother
+
+    return query
+```
+
+
+```python
+from z3 import Solver, Const, EnumSort, Function, IntSort
+
+def solve_puzzle(S: Solver) -> Const:
+    # Define the enumeration sort for the individuals
+    Person, (BobE, JohnE, JayE, JaysBrotherE, FatherE) = EnumSort('Person', ['Bob', 'John', 'Jay', 'JaysBrother', 'Father'])
+
+    # Define a function from persons to the count of their sons
+    sons_count = Function('sons_count', Person, IntSort())
+
+    # Add constraints based on the problem statement
+    # Bob has two sons
+    S.add(sons_count(BobE) == 2)
+
+    # Jay has one brother and a father
+    # Jay_sons represents Jay + Jay's brother
+    S.add(sons_count(JayE) + sons_count(JaysBrotherE) == 2)
+
+    # Ensure all the previous constraints conclude that John is Jay's brother
+    S.add(sons_count(JayE) + sons_count(JohnE) == 2)
+    S.add(sons_count(BobE) == sons_count(JayE) + sons_count(JohnE))
+
+    # Create a new constant of Person sort to represent JaysBrother
+    query = Const("query", Person)
+    S.add(query == JohnE)  # Assuming John is Jay's brother
+
+    return query
+```

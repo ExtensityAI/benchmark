@@ -1,0 +1,12 @@
+This paper is a case study in problem solving, representing part of a program of research on complex information-processing systems. We have specified a system for finding proofs of theorems in elementary symbolic logic, and by programming a computer to these specifications, have obtained empirical data on the problem-solving process in elementary logic. The program is called the Logic Theory Machine (LT); it was devised to learn how it is possible to solve difficult problems such as proving mathematical theorems, discovering scientific laws from data, playing chess, or understanding the meaning of English prose.
+
+@article{Newell:57,
+  title={Empirical explorations of the logic theory machine: a case study in heuristic},
+  author={Newell, A. and Shaw, J. C. and Simon, H. A.},
+  journal={IRE-AIEE-ACM '57 (Western): Papers presented at the February 26-28, 1957, western joint computer conference: Techniques for reliability},
+  pages={218--230},
+  year={1957},
+  publisher={ACM},
+  doi={10.1145/1455567.1455605},
+  url={https://doi.org/10.1145/1455567.1455605}
+}
