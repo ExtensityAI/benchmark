@@ -38,15 +38,3 @@ python test.py --context_associations --program_synthesis --multimodal_bindings 
 ```
 
 This will run all the evaluations in the benchmark.
-
-## Cite us
-
-```bibtex
-@article{
-    Dinu:24,
-    title={SymbolicAI: A framework for logic-based approaches combining generative models and solvers},
-    author={Marius–Constantin Dinu and Claudiu Leoveanu–Condrei and Markus Holzleitner and Werner Zellinger and Sepp Hochreiter},
-    year={2024},
-    url={https://arxiv.org/abs/TODO}
-}
-```
