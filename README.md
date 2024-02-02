@@ -47,6 +47,9 @@ This will run all the evaluations in the benchmark.
     title={SymbolicAI: A framework for logic-based approaches combining generative models and solvers},
     author={Marius–Constantin Dinu and Claudiu Leoveanu–Condrei and Markus Holzleitner and Werner Zellinger and Sepp Hochreiter},
     year={2024},
-    url={https://arxiv.org/abs/TODO}
+    eprint={2402.00854},
+    archivePrefix={arXiv},
+    primaryClass={cs.LG}
+    url={https://arxiv.org/abs/2402.00854}
 }
 ```
