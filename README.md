@@ -49,7 +49,7 @@ This will run all the evaluations in the benchmark.
     year={2024},
     eprint={2402.00854},
     archivePrefix={arXiv},
-    primaryClass={cs.LG}
+    primaryClass={cs.LG},
     url={https://arxiv.org/abs/2402.00854}
 }
 ```
