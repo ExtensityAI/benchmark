@@ -51,16 +51,8 @@ Set the respective `config.json` properties for engine API keys and local models
         "host": "http://localhost",
         "port": 8080
     },
-    "zephyr": {
-        "host": "http://localhost",
-        "port": 8081
-    },
-    "mistral": {
-        "host": "http://localhost",
-        "port": 8082
-    }
+    ...
 }
-
 ```
 
 ## Usage
