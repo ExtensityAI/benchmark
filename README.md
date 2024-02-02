@@ -29,6 +29,40 @@ Install embeddings backend.
 sympkg i ExtensityAI/embeddings
 ```
 
+## Configuration
+
+Set the respective `config.json` properties for engine API keys and local models as shown below, and run the local models with the configured port and host name.
+
+```json
+{
+    "gpt4": {
+        "api_key": "",
+        "model": "gpt-4-1106-preview"
+    },
+    "gpt3.5": {
+        "api_key": "",
+        "model": "gpt-3.5-turbo-1106"
+    },
+    "gemini": {
+        "api_key": "",
+        "model": "gemini-pro"
+    },
+    "llama": {
+        "host": "http://localhost",
+        "port": 8080
+    },
+    "zephyr": {
+        "host": "http://localhost",
+        "port": 8081
+    },
+    "mistral": {
+        "host": "http://localhost",
+        "port": 8082
+    }
+}
+
+```
+
 ## Usage
 
 Run the full benchmark.
