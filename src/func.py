@@ -146,7 +146,7 @@ class EvaluateBenchmark(Expression):
         # Register index engine globally for all Symbols
         EngineRepository.register('index', VectorDBIndexEngine(index_name='dataindex', index_dims=768, index_top_k=5))
         # Register embeddings engine globally for all Symbols from plugin
-        EngineRepository.register_from_plugin('embedding', plugin='ExtensityAI/embeddings', kwargs={'model': 'all-mpnet-base-v2'}, allow_engine_override=True)
+        EngineRepository.register_from_plugin('embedding', plugin='anonymous', kwargs={'model': 'all-mpnet-base-v2'}, allow_engine_override=True)
 
     def prepare(self, experiment, seed, config, results, type):
         # Set the engine error rate exception if necessary

@@ -97,7 +97,7 @@ EXPECTED_PLAN = deque([
 
 TASK_EXTRACTION_TEMPLATE = f"""
 This is your goal:
-Write a paper about the SymbolicAI framework from GitHub https://github.com/ExtensityAI/symbolicai. Include citations and references from the papers directory `./snippets/papers`.
+Write a paper about the SymbolicAI framework from GitHub https://anonymous.4open.science/r/symbolicai-283D. Include citations and references from the papers directory `./snippets/papers`.
 
 History of tasks that have been executed:
 [EXECUTED SUCCESSFULLY@21/01/2024 15:38:45:867949]:
@@ -115,7 +115,7 @@ History of tasks that have been executed:
 
 This is the pool of tasks that are left to be executed:
 >Task 2: Write a summary of the SymbolicAI framework
->>Subtask 2.1: Use the web browser to open the GitHub URL https://github.com/ExtensityAI/symbolicai
+>>Subtask 2.1: Use the web browser to open the GitHub URL https://anonymous.4open.science/r/symbolicai-283D/README.md
 >>Subtask 2.2: Summarize the GitHub page
 >Task 3: Write the Related Work section
 
@@ -296,7 +296,7 @@ class Memory(SlidingWindowStringConcatMemory):
             return super().recall(query)
 
     def _register_local_index(self):
-        EngineRepository.register_from_plugin('embedding', plugin='ExtensityAI/embeddings', kwargs={'model': 'all-mpnet-base-v2'}, allow_engine_override=True)
+        EngineRepository.register_from_plugin('embedding', plugin='anonymous', kwargs={'model': 'all-mpnet-base-v2'}, allow_engine_override=True)
         EngineRepository.register('index', VectorDBIndexEngine(index_name='dataindex', index_dims=768, index_top_k=5))
 
 
