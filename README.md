@@ -4,6 +4,8 @@
 
 We introduce SymbolicAI, a versatile and modular framework employing a logic-based approach to concept learning and flow management in generative processes. SymbolicAI enables the seamless integration of generative models with a diverse range of solvers by treating large language models (LLMs) as semantic parsers that execute tasks based on both natural and formal language instructions, thus bridging the gap between symbolic reasoning and generative AI. We leverage probabilistic programming principles to tackle complex tasks, and utilize differentiable and classical programming paradigms with their respective strengths. The framework introduces a set of polymorphic, compositional, and self-referential operations for data stream manipulation, aligning LLM outputs with user objectives. As a result, we can transition between the capabilities of various foundation models endowed with zero- and few-shot learning capabilities and specialized, fine-tuned models or solvers proficient in addressing specific problems. In turn, the framework facilitates the creation and evaluation of explainable computational graphs. We conclude by introducing a quality measure and its empirical score for evaluating these computational graphs, and propose a benchmark that compares various state-of-the-art LLMs across a set of complex workflows. We refer to the empirical score as the "Vector Embedding for Relational Trajectory Evaluation through Cross-similarity", or VERTEX score for short. The SymbolicAI framework codebase is available [here](https://github.com/ExtensityAI/symbolicai).
 
+<img src="./assets/results.png" alt="Results" width="1000"/>
+
 ## Installation
 
 ### Requirements
@@ -29,6 +31,32 @@ Install embeddings backend.
 sympkg i ExtensityAI/embeddings
 ```
 
+## Configuration
+
+Set the respective `config.json` properties for engine API keys and local models as shown below, and run the local models with the configured port and host name.
+
+```json
+{
+    "gpt4": {
+        "api_key": "",
+        "model": "gpt-4-1106-preview"
+    },
+    "gpt3.5": {
+        "api_key": "",
+        "model": "gpt-3.5-turbo-1106"
+    },
+    "gemini": {
+        "api_key": "",
+        "model": "gemini-pro"
+    },
+    "llama": {
+        "host": "http://localhost",
+        "port": 8080
+    },
+    ...
+}
+```
+
 ## Usage
 
 Run the full benchmark.
@@ -47,6 +75,9 @@ This will run all the evaluations in the benchmark.
     title={SymbolicAI: A framework for logic-based approaches combining generative models and solvers},
     author={Marius–Constantin Dinu and Claudiu Leoveanu–Condrei and Markus Holzleitner and Werner Zellinger and Sepp Hochreiter},
     year={2024},
-    url={https://arxiv.org/abs/TODO}
+    eprint={2402.00854},
+    archivePrefix={arXiv},
+    primaryClass={cs.LG},
+    url={https://arxiv.org/abs/2402.00854}
 }
 ```
