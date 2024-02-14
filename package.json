@@ -1,6 +1,6 @@
 {
     "version": "0.0.1",
-    "name": "ExtensityAI/benchmark",
+    "name": "anonymous/benchmark",
     "description": "Evaluation of the neuro-symbolic framework.",
     "expressions": [
         {
@@ -13,7 +13,7 @@
         "type": "EvaluateBenchmark"
     },
     "dependencies": [
-        "ExtensityAI/llamacpp",
-        "ExtensityAI/tuning"
+        "anonymous/llamacpp",
+        "anonymous/tuning"
     ]
 }
