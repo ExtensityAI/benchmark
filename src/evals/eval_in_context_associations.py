@@ -187,13 +187,13 @@ def test_filter(aggregate):
     cnt += (1 if succ else 0)                                                                     | aggregate.cnt         # collect the result value
     succ &= 'mathematics' in res
     cnt += (1 if succ else 0)                                                                     | aggregate.cnt         # collect the result value
-    succ &= 'music' in res
+    succ &= 'music' not in res
     cnt += (1 if succ else 0)                                                                     | aggregate.cnt         # collect the result value
-    succ &= 'art' in res
+    succ &= 'art' not in res
     cnt += (1 if succ else 0)                                                                     | aggregate.cnt         # collect the result value
-    succ &= 'theater' in res
+    succ &= 'theater' not in res
     cnt += (1 if succ else 0)                                                                     | aggregate.cnt         # collect the result value
-    succ &= 'writing' in res
+    succ &= 'writing' not in res
     cnt += (1 if succ else 0)                                                                     | aggregate.cnt         # collect the result value
     succ &= 'sports' not in res
     cnt += (1 if succ else 0)                                                                     | aggregate.cnt         # collect the result value
