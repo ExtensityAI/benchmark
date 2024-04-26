@@ -38,10 +38,13 @@ BENCHMARK_NAME_MAPPING = {
 MODEL_NAME_MAPPING = {
     'gpt4': 'GPT-4 Turbo',
     'gpt3.5': 'GPT-3.5 Turbo',
-    'gemini': 'Gemini-Pro',
+    'gemini': 'Gemini 1.0 Pro',
+    'gemini1.5': 'Gemini 1.5 Pro',
     'llama': 'LlaMA 2 13B',
     'mistral': 'Mistral 7B',
     'zephyr': 'Zephyr 7B',
+    'llama3_8B': 'LlaMA 3 8B',
+    'llama3_70B': 'LlaMA 3 70B',
     'random': 'Random'
 }
 
@@ -154,18 +157,18 @@ class EvaluateBenchmark(Expression):
         engine         = None
 
         # Set the engine configuration
-        if experiment == 'gpt4' or experiment == 'gpt3.5':
+        if 'gpt' in experiment:
             rate_exception = RateLimitError
             # initialize the engine
             engine = GPTXChatEngine(api_key=config[experiment]['api_key'],
                                     model=config[experiment]['model'])
             EngineRepository.register('neurosymbolic', engine, allow_engine_override=True)
-        elif experiment == 'gemini':
+        elif 'gemini' in experiment:
             # initialize the engine
             engine = GoogleGeminiEngine(api_key=config[experiment]['api_key'],
                                         model=config[experiment]['model'])
             EngineRepository.register('neurosymbolic', engine, allow_engine_override=True)
-        elif experiment == 'llama':
+        elif 'llama' in experiment:
             # initialize the engine
             engine = LLaMACppClientEngine(host=config[experiment]['host'],
                                           port=config[experiment]['port'])
@@ -368,7 +371,7 @@ def run(args):
 
     # Run benchmark
     seeds  = [42, 18, 97, 3, 200, 32, 815, 6] if not args.seeds or 'all' in args.seeds else args.seeds
-    models = ["gpt4", "llama", "gpt3.5", "zephyr", "gemini", "mistral", "random"] if not args.models or 'all' in args.models else args.models
+    models = ["gpt4", "llama", "gpt3.5", "zephyr", "gemini", "mistral", "llama3_8B", "gemini1.5", "llama3_70B", "random"] if not args.models or 'all' in args.models else args.models
     tests  = None if not args.tests or 'all' in args.tests else args.tests
     benchmark_results = benchmarker(experiments=models,
                                     n_runs=1,

@@ -30,7 +30,7 @@ def test_basic_factual_prompt_pi(aggregate):
     sym = Expression.prompt('''[Last Instruction]
 Return only a number as an answer.
 [Last Query]
-Write the first 10 digits of Pi:
+Write the number of Pi up to the 10th digit after the comma:
 [Last Answer]''')                                                                                 | aggregate.sym         # collect the symbol value
     # sanity check if models are working
     # every model must pass this basic test
@@ -52,7 +52,7 @@ def test_add_and_equals(aggregate):
 
 
 @toggle_test(ACTIVE, default=MOCK_RETURN)
-def test_add_and_equals(aggregate):
+def test_add_and_equals_2(aggregate):
     '''Test if the addition operator between a number symbol and linguistic number symbol works'''
     # auto cast to Symbol
     try:
@@ -64,7 +64,7 @@ def test_add_and_equals(aggregate):
 
 
 @toggle_test(ACTIVE, default=MOCK_RETURN)
-def test_add_and_equals(aggregate):
+def test_add_and_equals_3(aggregate):
     '''Test if the addition operator between a large number symbol and linguistic number symbol works'''
     # auto cast to Symbol
     try:

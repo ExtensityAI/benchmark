@@ -87,8 +87,11 @@ def sort_items_by_name(model):
 remap_name = {
     'GPT-4 Turbo': 'GPT-4',
     'GPT-3.5 Turbo': 'GPT-3.5',
-    'Gemini-Pro': 'Gemini-Pro',
+    'Gemini 1.0 Pro': 'Gemini 1.0',
+    'Gemini 1.5 Pro': 'Gemini 1.5',
     'LlaMA 2 13B': 'LlaMA 2',
+    'LlaMA 3 8B': 'LlaMA 3 8B',
+    'LlaMA 3 70B': 'LlaMA 3 70B',
     'Zephyr 7B': 'Zephyr',
     'Mistral 7B': 'Mistral',
     'Random': 'Random'

@@ -66,7 +66,7 @@ class Context(Conversation):
                             post_processors=[StripPostProcessor(), CodeExtractPostProcessor()],
                             static_context=self.static_context,
                             dynamic_context=self.dynamic_context)
-        return function(task, *args, **kwargs)
+        return function(f"{task}\n[Source]\n{self.history()}", *args, **kwargs)
 
     @property
     def description(self):
