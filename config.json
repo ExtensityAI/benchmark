@@ -1,15 +1,15 @@
 {
     "gpt4": {
-        "api_key": "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",
+        "api_key": "",
         "model": "gpt-4-1106-preview"
     },
     "gpt3.5": {
-        "api_key": "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",
+        "api_key": "",
         "model": "gpt-3.5-turbo"
     },
     "gemini": {
-        "api_key": "AIzaSyAcKBcfOC3xSR8-MaFQfgemfG-PxP7Kliw",
-        "model": "gemini-pro"
+        "api_key": "",
+        "model": "gemini-1.0-pro"
     },
     "llama": {
         "host": "http://localhost",
@@ -22,5 +22,17 @@
     "mistral": {
         "host": "http://localhost",
         "port": 8082
+    },
+    "llama3_8B": {
+        "host": "http://localhost",
+        "port": 8083
+    },
+    "llama3_70B": {
+        "host": "http://localhost",
+        "port": 8084
+    },
+    "gemini1.5": {
+        "api_key": "",
+        "model": "gemini-1.5-pro-latest"
     }
 }
