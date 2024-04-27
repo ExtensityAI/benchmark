@@ -196,8 +196,8 @@ def test_dsl_writing_capability(aggregate):
     reader       = FileReader()
     dir_path     = Path(__file__).parent.absolute() / "snippets"
     formulations = reader((dir_path / "formulations_dsl_rewriting.txt").as_posix())
-    formulation1, formulation2, formulation3 = formulations.split("\n\n\n")
-    formulations = Symbol([formulation1, formulation2, formulation3])
+    formulation1, formulation2 = formulations.split("\n\n\n")
+    formulations = Symbol([formulation1, formulation2])
     form_means   = formulations.mean(axis=0)                                                                               | aggregate.formulations
     scoring      = []
     expr         = HOLFactorization(val, post_processors=[StripPostProcessor(), CodeExtractPostProcessor()])
