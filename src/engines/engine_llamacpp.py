@@ -28,7 +28,7 @@ class LLaMAResult(Result):
 
 
 class LLaMACppClientEngine(Engine):
-    def __init__(self, host: str = 'http://localhost', port: int = 8080, uri: str = 'completion', timeout: int = 240):
+    def __init__(self, host: str = 'http://localhost', port: int = 8080, uri: str = 'completion', timeout: int = 600):
         super().__init__()
         logger = logging.getLogger('nesy_client')
         logger.setLevel(logging.WARNING)

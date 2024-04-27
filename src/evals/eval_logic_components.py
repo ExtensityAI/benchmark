@@ -195,7 +195,7 @@ def test_dsl_writing_capability(aggregate):
     val  = "Bob has two sons, John and Jay. Jay has one brother and father. The father has two sons. Jay's brother has a brother and a father. Who is Jay's brother."
     reader       = FileReader()
     dir_path     = Path(__file__).parent.absolute() / "snippets"
-    formulations = reader((dir_path / "jays_brother_trajectories.txt").as_posix())
+    formulations = reader((dir_path / "formulations_dsl_rewriting.txt").as_posix())
     formulation1, formulation2, formulation3 = formulations.split("\n\n\n")
     formulations = Symbol([formulation1, formulation2, formulation3])
     form_means   = formulations.mean(axis=0)                                                                               | aggregate.formulations
