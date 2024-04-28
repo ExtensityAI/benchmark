@@ -66,7 +66,7 @@ def sort_by_name(model):
         return 0
     elif 'GPT-3.5' in model:
         return 1
-    elif 'Gemini' in model:
+    elif 'Random' in model:
         return 2
     elif 'LlaMA' in model:
         return 3
@@ -74,7 +74,7 @@ def sort_by_name(model):
         return 4
     elif 'Zephyr' in model:
         return 5
-    elif 'Random' in model:
+    elif 'Gemini' in model:
         return 6
     else:
         return 7
@@ -85,15 +85,15 @@ def sort_items_by_name(model):
 
 
 remap_name = {
-    'GPT-4 Turbo': 'GPT-4',
-    'GPT-3.5 Turbo': 'GPT-3.5',
-    'Gemini 1.0 Pro': 'Gemini 1.0',
-    'Gemini 1.5 Pro': 'Gemini 1.5',
-    'LlaMA 2 13B': 'LlaMA 2',
+    'GPT-4 Turbo': 'GPT-4 Turbo',
+    'GPT-3.5 Turbo': 'GPT-3.5 Turbo',
+    'Gemini 1.0 Pro': 'Gemini 1.0 Pro',
+    'Gemini 1.5 Pro': 'Gemini 1.5 Pro',
+    'LlaMA 2 13B': 'LlaMA 2 13B',
     'LlaMA 3 8B': 'LlaMA 3 8B',
     'LlaMA 3 70B': 'LlaMA 3 70B',
-    'Zephyr 7B': 'Zephyr',
-    'Mistral 7B': 'Mistral',
+    'Zephyr 7B': 'Zephyr 7B',
+    'Mistral 7B': 'Mistral 7B',
     'Random': 'Random'
 }
 
@@ -216,7 +216,7 @@ def create_plot(data):
     ax.set_theta_offset(np.pi / 2)
     ax.set_theta_direction(-1)
     # Define font size
-    label_font_size = 18  # Choose desired font size
+    label_font_size = 13  # Choose desired font size
     ax.set_thetagrids(np.degrees(angles[:-1]), categories, fontsize=label_font_size)
     for label, angle in zip(ax.get_xticklabels(), angles):
         if angle in (0, np.pi):
@@ -228,7 +228,7 @@ def create_plot(data):
         label.set_position((label_padding, label.get_position()[1]))
 
     # Increase the font size for the legend
-    plt.legend(loc='upper right', bbox_to_anchor=(1.2, 1.2), fontsize=label_font_size)
+    plt.legend(loc='upper right', ncol=4, bbox_to_anchor=(1.2, 1.22), fontsize=label_font_size)
 
     # Set tight layout
     plt.tight_layout()
