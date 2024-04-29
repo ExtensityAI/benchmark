@@ -31,7 +31,7 @@ LATEX_TEMPLATE = """
   \\begin{{minipage}}{{.6\\textwidth}}
     \\centering
     \\begin{{adjustbox}}{{max width=\\linewidth}}
-    \\begin{{tabular}}{{lccccccc}}
+    \\begin{{tabular}}{{lccccccccc}}
       \\toprule
       \\textbf{{Benchmarks}} &  {model_names} \\\\
       \\midrule
@@ -216,7 +216,7 @@ def create_plot(data):
     ax.set_theta_offset(np.pi / 2)
     ax.set_theta_direction(-1)
     # Define font size
-    label_font_size = 13  # Choose desired font size
+    label_font_size = 15  # Choose desired font size
     ax.set_thetagrids(np.degrees(angles[:-1]), categories, fontsize=label_font_size)
     for label, angle in zip(ax.get_xticklabels(), angles):
         if angle in (0, np.pi):
@@ -228,13 +228,13 @@ def create_plot(data):
         label.set_position((label_padding, label.get_position()[1]))
 
     # Increase the font size for the legend
-    plt.legend(loc='upper right', ncol=4, bbox_to_anchor=(1.2, 1.22), fontsize=label_font_size)
+    plt.legend(loc='upper right', ncol=4, bbox_to_anchor=(1.38, 1.3, 0, 0), borderaxespad=0., fontsize=label_font_size)
 
     # Set tight layout
     plt.tight_layout()
 
     # Save as PDF
-    plt.savefig("tmp/benchmark_comparison_chart.pdf", format="pdf")
+    plt.savefig("tmp/benchmark_comparison_chart.pdf", format="pdf", bbox_inches='tight')
 
     # Show the plot
     plt.show()
